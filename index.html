@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>微商記帳工具｜進貨成本 × 利潤 × 滿額贈品</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pink:#C9938A; --soft-pink:#E8C4BC; --light-pink:#F5E6E3;
+  --blue:#7A9BAD; --soft-blue:#B8CFDA; --light-blue:#E3EDF3;
+  --sage:#9AAE9B; --light-sage:#E8F0E8;
+  --cream:#FAF3EE; --bg:#FAFAF8; --dark:#37352F; --medium:#5A5248; --gray:#9B9A97;
+  --danger:#C97A7A; --danger-bg:#F5E3E3;
+  --amber:#C9A96A; --light-amber:#F3EBDA;
+  --radius:14px;
+  --shadow:0 2px 10px rgba(55,53,47,0.06);
+  --shadow-hover:0 4px 16px rgba(55,53,47,0.10);
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--dark);}
+h1,h2,h3{margin:0;font-weight:700;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+#app{display:flex;min-height:100vh;}
+.sidebar{
+  width:220px;flex-shrink:0;background:#fff;border-right:1px solid #EFEBE6;
+  padding:24px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.brand{display:flex;align-items:center;gap:8px;padding:0 10px 20px;}
+.brand-dot{width:12px;height:12px;border-radius:50%;background:var(--pink);}
+.brand h1{font-size:16px;letter-spacing:.5px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;
+  color:var(--medium);font-size:14px;font-weight:500;margin-bottom:4px;
+  border:none;background:transparent;width:100%;text-align:left;transition:.15s;
+}
+.nav-item:hover{background:var(--light-pink);color:var(--dark);}
+.nav-item.active{background:var(--pink);color:#fff;font-weight:700;}
+.nav-icon{font-size:16px;width:18px;text-align:center;}
+
+.main{flex:1;min-width:0;padding:28px 32px 80px;}
+.page{display:none;}
+.page.active{display:block;}
+.page-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;}
+.page-header h2{font-size:22px;}
+.page-sub{color:var(--gray);font-size:13px;margin-top:4px;}
+
+.btn{
+  border-radius:10px;padding:10px 18px;font-size:14px;font-weight:700;border:none;
+  display:inline-flex;align-items:center;gap:6px;transition:.15s;
+}
+.btn-primary{background:var(--pink);color:#fff;}
+.btn-primary:hover{background:#B8807A;box-shadow:var(--shadow-hover);}
+.btn-secondary{background:var(--light-blue);color:var(--blue);}
+.btn-secondary:hover{background:var(--soft-blue);color:#fff;}
+.btn-amber{background:var(--light-amber);color:#8A6D2F;}
+.btn-amber:hover{background:var(--amber);color:#fff;}
+.btn-ghost{background:transparent;color:var(--medium);border:1px solid #E5E0D8;}
+.btn-ghost:hover{background:var(--cream);}
+.btn-danger{background:var(--danger-bg);color:var(--danger);}
+.btn-danger:hover{background:var(--danger);color:#fff;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;border-left:4px solid var(--pink);}
+.stat-card.blue{border-left-color:var(--blue);}
+.stat-card.sage{border-left-color:var(--sage);}
+.stat-card.dark{border-left-color:var(--dark);}
+.stat-label{font-size:12.5px;color:var(--gray);font-weight:500;}
+.stat-value{font-size:24px;font-weight:900;margin-top:6px;letter-spacing:.3px;}
+.stat-value.pos{color:var(--sage);}
+.stat-value.neg{color:var(--danger);}
+
+.section-title{font-size:15px;font-weight:700;margin:26px 0 12px;color:var(--dark);display:flex;align-items:center;gap:8px;}
+.section-title .tag{font-size:11px;background:var(--light-sage);color:#5C7A5E;padding:2px 8px;border-radius:6px;font-weight:700;}
+
+.table-wrap{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:680px;}
+th,td{padding:12px 14px;text-align:left;font-size:13.5px;white-space:nowrap;}
+th{color:var(--gray);font-weight:700;font-size:12px;border-bottom:1px solid #EFEBE6;background:var(--cream);position:sticky;top:0;}
+tbody tr{border-bottom:1px solid #F3F0EA;}
+tbody tr:hover{background:var(--light-pink);}
+td.num{text-align:right;font-variant-numeric:tabular-nums;}
+.profit-pos{color:#5C7A5E;font-weight:700;}
+.profit-neg{color:var(--danger);font-weight:700;}
+.empty-state{padding:60px 20px;text-align:center;color:var(--gray);}
+.empty-state .emoji{font-size:34px;margin-bottom:10px;}
+
+.filter-bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center;}
+.filter-bar input,.filter-bar select{border:1px solid #E5E0D8;border-radius:9px;padding:9px 12px;font-size:13.5px;background:#fff;color:var(--dark);}
+.filter-bar input[type="text"]{flex:1;min-width:160px;}
+
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:12.5px;font-weight:700;color:var(--medium);}
+.field .hint{font-size:11px;color:var(--gray);font-weight:400;}
+.field input,.field select,.field textarea{border:1px solid #E5E0D8;border-radius:10px;padding:10px 12px;font-size:14px;background:#FDFCFA;color:var(--dark);}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--soft-blue);border-color:var(--blue);}
+.form-card{margin-bottom:18px;}
+.form-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:6px;}
+.form-card-head h3{font-size:14.5px;}
+
+.dyn-row{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:10px;margin-bottom:8px;align-items:end;}
+.dyn-row.cols3{grid-template-columns:1.6fr 1fr auto;}
+.dyn-row.cols4{grid-template-columns:1.3fr 0.8fr 1fr auto;}
+.dyn-row .field{margin:0;}
+.dyn-remove{background:var(--danger-bg);color:var(--danger);border:none;border-radius:8px;width:38px;height:38px;font-size:16px;}
+.add-row-btn{margin-top:4px;}
+.subtle-box{background:var(--cream);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:12.5px;color:var(--medium);}
+
+.calc-box{margin-top:22px;border-radius:var(--radius);background:var(--light-blue);padding:18px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;}
+.calc-item .l{font-size:12px;color:var(--medium);font-weight:700;}
+.calc-item .v{font-size:19px;font-weight:900;margin-top:3px;}
+.calc-item.profit .v.pos{color:#4B6B4D;}
+.calc-item.profit .v.neg{color:#A85454;}
+.gift-auto-box{margin-top:14px;border-radius:12px;background:var(--light-sage);padding:14px 16px;font-size:13px;color:#3F5C41;line-height:1.7;}
+.gift-auto-box b{font-weight:700;}
+.gift-auto-box.empty{background:var(--cream);color:var(--gray);}
+
+.form-actions{display:flex;gap:10px;margin-top:22px;position:sticky;bottom:0;background:linear-gradient(to top, var(--bg) 70%, transparent);padding:14px 0 4px;}
+
+.summary-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.bar-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F3F0EA;}
+.bar-label{width:110px;flex-shrink:0;font-size:12.5px;color:var(--medium);font-weight:700;}
+.bar-track{flex:1;height:10px;background:var(--light-sage);border-radius:6px;overflow:hidden;}
+.bar-fill{height:100%;background:var(--sage);border-radius:6px;}
+.bar-val{width:110px;text-align:right;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;}
+
+.backup-box{max-width:520px;}
+.backup-box p{font-size:13.5px;color:var(--medium);line-height:1.7;}
+.guide-list{margin:0;padding-left:20px;line-height:1.9;font-size:13.5px;color:var(--medium);}
+.guide-list li{margin-bottom:6px;}
+.guide-list b{color:var(--dark);}
+
+.modal-mask{display:none;position:fixed;inset:0;background:rgba(55,53,47,.35);z-index:50;align-items:center;justify-content:center;padding:20px;}
+.modal-mask.show{display:flex;}
+.modal-box{background:#fff;border-radius:var(--radius);padding:24px;max-width:360px;width:100%;box-shadow:var(--shadow-hover);}
+.modal-box h3{font-size:16px;margin-bottom:10px;}
+.modal-box p{font-size:13.5px;color:var(--medium);margin-bottom:18px;line-height:1.6;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--dark);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:100;box-shadow:var(--shadow-hover);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.mobile-topbar{display:none;}
+@media (max-width:880px){
+  .sidebar{position:fixed;bottom:0;left:0;right:0;top:auto;width:100%;height:auto;display:flex;flex-direction:row;justify-content:space-around;padding:8px 4px;border-right:none;border-top:1px solid #EFEBE6;z-index:40;overflow-x:auto;}
+  .brand{display:none;}
+  .nav-item{flex-direction:column;font-size:10.5px;padding:7px 6px;gap:2px;white-space:nowrap;min-width:56px;}
+  .nav-icon{font-size:18px;}
+  .main{padding:16px 14px 90px;}
+  .mobile-topbar{display:flex;align-items:center;gap:8px;margin-bottom:18px;}
+  .mobile-topbar .brand-dot{width:10px;height:10px;border-radius:50%;background:var(--pink);}
+  .mobile-topbar h1{font-size:16px;}
+  .stat-value{font-size:20px;}
+  .calc-box{grid-template-columns:repeat(2,1fr);}
+  .dyn-row,.dyn-row.cols3,.dyn-row.cols4{grid-template-columns:1fr;}
+  .dyn-remove{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <nav class="sidebar" id="sidebar">
+    <div class="brand"><span class="brand-dot"></span><h1>微商記帳工具</h1></div>
+    <button class="nav-item" data-page="dashboard"><span class="nav-icon">📊</span><span>儀表板</span></button>
+    <button class="nav-item" data-page="guide"><span class="nav-icon">📖</span><span>使用說明</span></button>
+    <button class="nav-item" data-page="list"><span class="nav-icon">📋</span><span>訂單清單</span></button>
+    <button class="nav-item" data-page="form"><span class="nav-icon">➕</span><span>新增訂單</span></button>
+    <button class="nav-item" data-page="stockLedger"><span class="nav-icon">📦</span><span>進貨紀錄</span></button>
+    <button class="nav-item" data-page="productSettings"><span class="nav-icon">🛍️</span><span>商品設定</span></button>
+    <button class="nav-item" data-page="giftSettings"><span class="nav-icon">🧾</span><span>支出項設定</span></button>
+    <button class="nav-item" data-page="productReport"><span class="nav-icon">📈</span><span>商品報表</span></button>
+    <button class="nav-item" data-page="daily"><span class="nav-icon">📅</span><span>日結算</span></button>
+    <button class="nav-item" data-page="monthly"><span class="nav-icon">🗓️</span><span>月結算</span></button>
+    <button class="nav-item" data-page="yearly"><span class="nav-icon">📆</span><span>年結算</span></button>
+    <button class="nav-item" data-page="backup"><span class="nav-icon">💾</span><span>備份</span></button>
+  </nav>
+
+  <main class="main">
+    <div class="mobile-topbar"><span class="brand-dot"></span><h1>微商記帳工具</h1></div>
+
+    <!-- 使用說明 -->
+    <section class="page" id="page-guide">
+      <div class="page-header"><div><h2>使用說明</h2><div class="page-sub">第一次使用建議從頭看一次，之後隨時可以回來查看</div></div></div>
+
+      <div class="card form-card">
+        <h3 style="margin-bottom:12px;font-size:15px;">🚀 快速上手（建議依序做）</h3>
+        <ol class="guide-list">
+          <li><b>商品設定</b>：先把你賣的商品建起來（例如生髮膠囊、果乾水…），之後新增訂單才能直接選，不用手打</li>
+          <li><b>支出項設定</b>：建立贈品、運費等成本項目（會自動算出單位成本），再設定「滿額禮門檻」（例如滿1000送A）</li>
+          <li><b>商品設定 → 買就送規則</b>（選填）：如果有「買A送B」這種跟金額無關、只跟商品有關的贈品，在這裡設定</li>
+          <li><b>進貨紀錄</b>：記錄每次進貨，之後訂單會自動用平均進貨單價算出成本；代理補貨改在「新增訂單」裡直接填</li>
+          <li><b>新增訂單</b>：選商品、填數量與各通路金額，系統會自動判定滿額禮／買就送、算出成本與利潤</li>
+        </ol>
+      </div>
+
+      <div class="card form-card">
+        <h3 style="margin-bottom:12px;font-size:15px;">⚠️ 資料保存最重要的 3 件事</h3>
+        <ul class="guide-list">
+          <li>所有資料都<b>只存在這個瀏覽器、這台裝置</b>，不會自動上傳、也不會跟其他裝置或瀏覽器同步</li>
+          <li>換裝置、換瀏覽器、清除瀏覽器資料／快取，資料都會不見，<b>養成習慣三不五時到「💾 備份」頁面匯出備份檔</b>，存一份在雲端硬碟</li>
+          <li>瀏覽器儲存空間有上限（約 5MB，可記錄數千筆訂單），「備份」頁面可以看到目前用了多少，快滿了系統會提醒你</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:15px;">📱 手機使用小提醒</h3>
+        <ul class="guide-list">
+          <li>打開後建議用瀏覽器的分享／選單功能「加入主畫面」，之後桌面會有一個像 App 的圖示，點一下就能開</li>
+          <li>務必都用<b>同一個瀏覽器 App</b> 開啟（例如都用 Safari，或都用 Chrome），資料才會一直存在同一個地方</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 儀表板 -->
+    <section class="page" id="page-dashboard">
+      <div class="page-header">
+        <div><h2>儀表板</h2><div class="page-sub">一眼看懂本月的成本與利潤</div></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" data-page="stockLedger">📦 進貨紀錄</button>
+          <button class="btn btn-primary" data-page="form">＋ 新增訂單</button>
+        </div>
+      </div>
+      <div class="grid-cards" id="dashboardCards"></div>
+      <div class="section-title">最近訂單</div>
+      <div class="table-wrap" id="dashboardRecent"></div>
+    </section>
+
+    <!-- 訂單清單 -->
+    <section class="page" id="page-list">
+      <div class="page-header">
+        <div><h2>訂單清單</h2><div class="page-sub">搜尋、篩選每一筆進出貨紀錄</div></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" data-page="stockLedger">📦 進貨紀錄</button>
+          <button class="btn btn-primary" data-page="form">＋ 新增訂單</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="搜尋產品名稱…">
+        <input type="date" id="filterStart">
+        <span style="color:var(--gray);font-size:13px;">至</span>
+        <input type="date" id="filterEnd">
+        <select id="filterPlatform">
+          <option value="">全部通路</option>
+          <option value="website">官網</option>
+          <option value="shopee">蝦皮</option>
+          <option value="shopline">賣貨便</option>
+          <option value="meetup">面交</option>
+          <option value="retail">零售品項</option>
+          <option value="wholesale">批發</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" id="clearFilterBtn">清除篩選</button>
+      </div>
+      <div class="table-wrap" id="listTableWrap"></div>
+    </section>
+
+    <!-- 新增／編輯表單 -->
+    <section class="page" id="page-form">
+      <div class="page-header">
+        <div><h2 id="formTitle">新增訂單</h2><div class="page-sub">填寫實際使用到的欄位即可，系統會自動加總成本與利潤</div></div>
+      </div>
+      <form id="orderForm">
+        <input type="hidden" id="orderId">
+
+        <div class="card form-card">
+          <div class="form-card-head"><h3>🧾 訂單基本資訊</h3></div>
+          <div class="form-grid">
+            <div class="field"><label>訂單日期</label><input type="date" id="f_orderDate"></div>
+            <div class="field"><label>商品模式</label>
+              <select id="f_orderMode">
+                <option value="retail">零售（可多品項）</option>
+                <option value="wholesale">批發混批</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="retailModeBox" style="margin-top:14px;">
+            <div class="field">
+              <label>快速帶入系列商品（選填）</label>
+              <div style="display:flex;gap:8px;">
+                <select id="f_retailQuickSeries" style="flex:1;"></select>
+                <button type="button" class="btn btn-secondary btn-sm" id="retailQuickAddSeriesBtn" style="flex:none;">帶入品項</button>
+              </div>
+            </div>
+            <div id="retailItemRows" style="margin-top:12px;"></div>
+            <button type="button" class="btn btn-secondary btn-sm add-row-btn" id="addRetailItemRow">＋ 新增品項</button>
+            <div id="retailAmountBox" class="gift-auto-box empty" style="margin-top:12px;">請新增品項並輸入數量</div>
+          </div>
+
+          <div id="wholesaleModeBox" style="margin-top:14px;display:none;">
+            <div class="field"><label>批發系列</label><select id="f_seriesId"></select></div>
+            <div id="wholesaleItemRows" style="margin-top:12px;"></div>
+            <div id="wholesaleSummaryBox" class="gift-auto-box empty" style="margin-top:12px;">請選擇批發系列</div>
+          </div>
+
+          <div class="hint" style="margin-top:8px;">進貨請到左側「📦 進貨紀錄」單獨新增；商品／批發系列請到「🛍️ 商品設定」建立</div>
+          <div id="productCostBox" class="gift-auto-box empty" style="margin-top:12px;">新增品項後，系統會依照「進貨紀錄」自動估算這筆訂單的進貨成本</div>
+          <div class="field" style="margin-top:10px;">
+            <label>手動調整進貨成本 <span class="hint" style="font-weight:400;">（留空＝使用自動估算，填數字＝以此為準）</span></label>
+            <input type="number" id="f_costOverride" min="0" step="0.01" placeholder="留空自動計算">
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <div class="form-card-head"><h3>🤝 代理補貨資訊</h3></div>
+          <div class="form-grid">
+            <div class="field"><label>代理名稱</label><input type="text" id="f_agentName" placeholder="例：A代理"></div>
+            <div class="field"><label>代理補貨數量</label><input type="number" id="f_agentQty" min="0" placeholder="0"></div>
+            <div class="field"><label>代理補貨金額</label><input type="number" id="f_agentAmount" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>代理補貨日期</label><input type="date" id="f_agentDate"></div>
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <div class="form-card-head"><h3>🚚 免運負擔</h3></div>
+          <div class="form-grid">
+            <div class="field"><label>客人享免運，我負擔多少</label><input type="number" id="f_freeShipping" min="0" step="0.01" placeholder="0"></div>
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <div class="form-card-head">
+            <h3>🎁 贈品（自動判定滿額禮 + 買就送）</h3>
+          </div>
+          <div class="subtle-box">滿額禮適用「官網＋賣貨便＋面交」合併金額；買就送依零售品項的「商品＋數量」自動比對（不限通路）。支出項目請先到「🧾 支出項設定」建立，買就送規則請到「🛍️ 商品設定」建立。</div>
+          <div id="giftAutoBox" class="gift-auto-box">請先填寫訂單金額或選擇商品</div>
+          <div class="field" style="margin-top:10px;">
+            <label>手動調整滿額禮／買就送成本 <span class="hint" style="font-weight:400;">（留空＝使用自動判定，填數字＝以此為準；下面自訂贈品另外累加）</span></label>
+            <input type="number" id="f_giftCostOverride" min="0" step="0.01" placeholder="留空自動計算">
+          </div>
+
+          <div class="field" style="margin-top:14px;flex-direction:row;align-items:center;gap:8px;">
+            <input type="checkbox" id="f_noGift" style="width:18px;height:18px;flex:none;">
+            <label for="f_noGift" style="font-size:13px;">客人不要禮物（本單不計算滿額禮／買就送的贈品成本；若上面有手動填成本，仍以手動填的為準）</label>
+          </div>
+
+          <div style="margin-top:18px;">
+            <div class="form-card-head"><h3 style="font-size:13.5px;">自訂贈品（手動加贈，不受上面規則限制，蝦皮訂單也適用）</h3></div>
+            <div id="customGiftRows"></div>
+            <button type="button" class="btn btn-amber btn-sm add-row-btn" id="addCustomGiftRow">＋ 新增自訂贈品</button>
+          </div>
+        </div>
+
+        <div class="card form-card" id="channelAmountCard">
+          <div class="form-card-head"><h3>💳 各通路訂單金額</h3></div>
+          <div class="subtle-box">上面「零售品項」依優惠價格算出的金額，會自動歸在獨立的「零售」通路裡；如果這筆訂單另外有透過官網／蝦皮／賣貨便／面交收款，可以在這裡加填金額，會一起加總進訂單總金額。</div>
+          <div class="form-grid">
+            <div class="field"><label>官網訂單金額</label><input type="number" id="f_websiteAmount" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>官網金流／平台成本</label><input type="number" id="f_websiteCost" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>賣貨便訂單金額</label><input type="number" id="f_shoplineAmount" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>面交訂單金額</label><input type="number" id="f_meetupAmount" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>蝦皮訂單金額</label><input type="number" id="f_shopeeAmount" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>蝦皮手續費</label><input type="number" id="f_shopeeFee" min="0" step="0.01" placeholder="0"></div>
+          </div>
+        </div>
+
+        <div class="card form-card" id="wholesaleAmountCard" style="display:none;">
+          <div class="form-card-head"><h3>💳 批發金額（自動計算）</h3></div>
+          <div class="subtle-box">批發訂單歸在獨立的「批發」通路，不計入滿額禮合併金額；如果這筆批發有另外送贈品，請用上面的「自訂贈品」手動加。</div>
+          <div id="wholesaleAmountBox" class="gift-auto-box empty">請選擇批發系列並輸入數量</div>
+          <div class="field" style="margin-top:10px;">
+            <label>手動調整批發金額 <span class="hint" style="font-weight:400;">（留空＝使用自動估算，填數字＝以此為準）</span></label>
+            <input type="number" id="f_wholesaleAmountOverride" min="0" step="0.01" placeholder="留空自動計算">
+          </div>
+        </div>
+
+        <div class="field"><label>備註</label><textarea id="f_note" rows="2" placeholder="其他想記錄的事情…"></textarea></div>
+
+        <div class="calc-box">
+          <div class="calc-item"><div class="l">訂單總金額</div><div class="v" id="calcRevenue">NT$0</div></div>
+          <div class="calc-item"><div class="l">成本總結</div><div class="v" id="calcCost">NT$0</div></div>
+          <div class="calc-item profit"><div class="l">利潤總結</div><div class="v" id="calcProfit">NT$0</div></div>
+          <div class="calc-item"><div class="l">利潤率</div><div class="v" id="calcMargin">0%</div></div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">💾 儲存訂單</button>
+          <button type="button" class="btn btn-ghost" id="resetFormBtn">清空表單</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 進貨紀錄 -->
+    <section class="page" id="page-stockLedger">
+      <div class="page-header"><div><h2>進貨紀錄</h2><div class="page-sub">獨立記錄進貨，不綁在特定訂單底下，方便之後對照與自動計算商品成本／庫存</div></div></div>
+
+      <div class="section-title">進貨紀錄</div>
+      <div class="card form-card">
+        <form id="purchaseBatchForm">
+          <input type="hidden" id="pb_id">
+          <div class="field">
+            <label>快速帶入系列商品（選填）</label>
+            <div style="display:flex;gap:8px;">
+              <select id="pb_quickSeries" style="flex:1;"></select>
+              <button type="button" class="btn btn-secondary btn-sm" id="pbQuickAddSeriesBtn" style="flex:none;">帶入品項</button>
+            </div>
+          </div>
+          <div class="form-card-head" style="margin-top:14px;"><h3 style="font-size:13px;">進貨品項</h3></div>
+          <div id="pbItemRows"></div>
+          <button type="button" class="btn btn-secondary btn-sm add-row-btn" id="addPbItemRow">＋ 新增進貨品項</button>
+          <div class="form-grid" style="margin-top:16px;">
+            <div class="field"><label>進貨運費</label><input type="number" id="pb_shipping" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>進貨日期</label><input type="date" id="pb_date"></div>
+            <div class="field"><label>備註</label><input type="text" id="pb_note" placeholder="選填"></div>
+          </div>
+          <div class="form-actions" style="position:static;background:none;padding-top:14px;">
+            <button type="submit" class="btn btn-primary btn-sm" id="pbSubmitBtn">＋ 新增進貨紀錄</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="pbCancelBtn" style="display:none;">取消編輯</button>
+          </div>
+        </form>
+      </div>
+      <div class="table-wrap" id="purchaseBatchTableWrap"></div>
+    </section>
+
+    <!-- 支出項設定 -->
+    <section class="page" id="page-giftSettings">
+      <div class="page-header"><div><h2>支出項設定</h2><div class="page-sub">先建立支出項與成本（贈品、運費…等都可以），再設定滿額禮門檻，訂單就能自動算出支出成本</div></div></div>
+
+      <div class="section-title">① 支出項 <span class="tag">單位成本 = (總成本＋運費＋關稅) ÷ 數量；運費也可以獨立建一項</span></div>
+      <div class="card form-card">
+        <form id="giftDefForm">
+          <input type="hidden" id="gd_id">
+          <div class="form-grid">
+            <div class="field"><label>支出項名稱</label><input type="text" id="gd_name" placeholder="例：化妝棉組 / 蝦皮運費" required></div>
+            <div class="field"><label>訂製數量</label><input type="number" id="gd_batchQty" min="0" placeholder="0"></div>
+            <div class="field"><label>訂製成本（總額）</label><input type="number" id="gd_batchCost" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>運費</label><input type="number" id="gd_shipping" min="0" step="0.01" placeholder="0"></div>
+            <div class="field"><label>關稅</label><input type="number" id="gd_tariff" min="0" step="0.01" placeholder="0"></div>
+          </div>
+          <div class="form-actions" style="position:static;background:none;padding-top:14px;">
+            <button type="submit" class="btn btn-primary btn-sm" id="gdSubmitBtn">＋ 新增支出項</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="gdCancelBtn" style="display:none;">取消編輯</button>
+          </div>
+        </form>
+      </div>
+      <div class="table-wrap" id="giftDefTableWrap" style="margin-bottom:30px;"></div>
+
+      <div class="section-title">② 滿額禮門檻 <span class="tag">適用官網＋賣貨便＋面交</span></div>
+      <div class="card form-card">
+        <form id="giftTierForm">
+          <input type="hidden" id="gt_id">
+          <div class="form-grid">
+            <div class="field"><label>滿額門檻金額</label><input type="number" id="gt_threshold" min="0" step="0.01" placeholder="例：1000" required></div>
+            <div class="field"><label>門檻名稱（選填）</label><input type="text" id="gt_label" placeholder="例：滿千好禮"></div>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="form-card-head"><h3 style="font-size:13px;">達成此門檻包含的支出項（贈品／運費…等）</h3></div>
+            <div id="tierGiftRows"></div>
+            <button type="button" class="btn btn-secondary btn-sm add-row-btn" id="addTierGiftRow">＋ 新增支出項</button>
+          </div>
+          <div class="form-actions" style="position:static;background:none;padding-top:14px;">
+            <button type="submit" class="btn btn-primary btn-sm" id="gtSubmitBtn">＋ 新增門檻</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="gtCancelBtn" style="display:none;">取消編輯</button>
+          </div>
+        </form>
+      </div>
+      <div class="table-wrap" id="giftTierTableWrap"></div>
+    </section>
+
+    <!-- 商品設定 -->
+    <section class="page" id="page-productSettings">
+      <div class="page-header"><div><h2>商品設定</h2><div class="page-sub">建立商品清單，新增訂單時就能直接選擇；也可以設定「買到指定數量即送」的贈品規則</div></div></div>
+
+      <div class="section-title">① 商品管理</div>
+      <div class="card form-card">
+        <form id="productForm">
+          <input type="hidden" id="pd_id">
+          <div class="form-grid">
+            <div class="field"><label>商品名稱</label><input type="text" id="pd_name" placeholder="例：生髮膠囊" required></div>
+            <div class="field"><label>期初庫存</label><input type="number" id="pd_initialStock" min="0" placeholder="0"></div>
+          </div>
+          <div class="form-actions" style="position:static;background:none;padding-top:14px;">
+            <button type="submit" class="btn btn-primary btn-sm" id="pdSubmitBtn">＋ 新增商品</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="pdCancelBtn" style="display:none;">取消編輯</button>
+          </div>
+        </form>
+      </div>
+      <div class="table-wrap" id="productTableWrap" style="margin-bottom:30px;"></div>
+
+      <div class="section-title">② 買就送規則 <span class="tag">買到指定數量自動送贈品，不受滿額禮限制</span></div>
+      <div class="card form-card">
+        <form id="buyGiftRuleForm">
+          <input type="hidden" id="bg_id">
+          <div class="form-grid">
+            <div class="field"><label>指定商品</label><select id="bg_productId"></select></div>
+            <div class="field"><label>最低購買數量</label><input type="number" id="bg_minQty" min="1" placeholder="例：1" required></div>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="form-card-head"><h3 style="font-size:13px;">送的支出項（贈品）</h3></div>
+            <div id="bgItemRows"></div>
+            <button type="button" class="btn btn-secondary btn-sm add-row-btn" id="addBgItemRow">＋ 新增支出項</button>
+          </div>
+          <div class="form-actions" style="position:static;background:none;padding-top:14px;">
+            <button type="submit" class="btn btn-primary btn-sm" id="bgSubmitBtn">＋ 新增規則</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="bgCancelBtn" style="display:none;">取消編輯</button>
+          </div>
+        </form>
+      </div>
+      <div class="table-wrap" id="buyGiftRuleTableWrap" style="margin-bottom:30px;"></div>
+
+      <div class="section-title">③ 批發系列與級距 <span class="tag">系列內商品可自由混批，依總盒數自動套用批發價</span></div>
+      <div class="card form-card">
+        <form id="seriesForm">
+          <input type="hidden" id="sr_id">
+          <div class="form-grid">
+            <div class="field"><label>系列名稱</label><input type="text" id="sr_name" placeholder="例：598系列" required></div>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="form-card-head"><h3 style="font-size:13px;">系列內的商品（可複選）</h3></div>
+            <div id="seriesProductChecks" class="subtle-box" style="display:flex;flex-wrap:wrap;gap:14px;"></div>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="form-card-head"><h3 style="font-size:13px;">批發級距 <span class="hint" style="font-weight:400;">（依總盒數區間，例：30~49盒每盒500元，適用「批發混批」模式）</span></h3></div>
+            <div id="seriesTierRows"></div>
+            <button type="button" class="btn btn-secondary btn-sm add-row-btn" id="addSeriesTierRow">＋ 新增批發級距</button>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="form-card-head"><h3 style="font-size:13px;">優惠價格 <span class="hint" style="font-weight:400;">（依系列內合計數量完全符合才套用，例：1盒598、2盒1080、3盒1580，適用「零售」多品項購物車）</span></h3></div>
+            <div id="seriesPriceTierRows"></div>
+            <button type="button" class="btn btn-secondary btn-sm add-row-btn" id="addSeriesPriceTierRow">＋ 新增優惠價格</button>
+          </div>
+          <div class="form-actions" style="position:static;background:none;padding-top:14px;">
+            <button type="submit" class="btn btn-primary btn-sm" id="srSubmitBtn">＋ 新增系列</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="srCancelBtn" style="display:none;">取消編輯</button>
+          </div>
+        </form>
+      </div>
+      <div class="table-wrap" id="seriesTableWrap"></div>
+    </section>
+
+    <!-- 商品/批發報表 -->
+    <section class="page" id="page-productReport">
+      <div class="page-header"><div><h2>商品/批發報表</h2><div class="page-sub">累計銷售數量、目前庫存，以及批發系列統計</div></div></div>
+      <div class="section-title">① 商品銷售統計</div>
+      <div class="table-wrap" id="productSalesReportWrap" style="margin-bottom:30px;"></div>
+      <div class="section-title">② 批發系列統計</div>
+      <div class="table-wrap" id="seriesReportWrap"></div>
+    </section>
+
+
+    <!-- 日結算 -->
+    <section class="page" id="page-daily">
+      <div class="page-header"><div><h2>日結算</h2><div class="page-sub">按日期查看每日的成本與利潤加總</div></div></div>
+      <div class="table-wrap" id="dailyTableWrap"></div>
+    </section>
+
+    <!-- 月結算 -->
+    <section class="page" id="page-monthly">
+      <div class="page-header"><div><h2>月結算</h2><div class="page-sub">每月淨利趨勢一目了然</div></div></div>
+      <div class="card" style="margin-bottom:18px;" id="monthlyBars"></div>
+      <div class="table-wrap" id="monthlyTableWrap"></div>
+    </section>
+
+    <!-- 年結算 -->
+    <section class="page" id="page-yearly">
+      <div class="page-header"><div><h2>年結算</h2><div class="page-sub">全年度營運總覽</div></div></div>
+      <div class="table-wrap" id="yearlyTableWrap"></div>
+    </section>
+
+    <!-- 備份 -->
+    <section class="page" id="page-backup">
+      <div class="page-header"><div><h2>資料備份</h2><div class="page-sub">資料儲存在這台裝置的瀏覽器中，換裝置或清除瀏覽器資料前，記得先匯出備份</div></div></div>
+      <div class="card" style="margin-bottom:20px;">
+        <h3 style="font-size:14px;margin-bottom:10px;">目前使用的儲存空間</h3>
+        <div class="bar-track" style="height:14px;"><div class="bar-fill" id="storageBar" style="width:0%;"></div></div>
+        <div style="margin-top:8px;font-size:12.5px;color:var(--medium);" id="storageText">計算中…</div>
+      </div>
+      <div class="card backup-box">
+        <h3 style="margin-bottom:10px;font-size:15px;">匯出備份</h3>
+        <p>將目前所有訂單、支出項設定資料匯出成一個 JSON 檔案，可保存在雲端硬碟或傳到其他裝置。</p>
+        <button class="btn btn-primary" id="exportBtn">⬇️ 匯出備份檔</button>
+        <h3 style="margin:26px 0 10px;font-size:15px;">匯入備份</h3>
+        <p>選擇先前匯出的 JSON 備份檔還原資料。匯入將會<strong>覆蓋</strong>目前瀏覽器中的所有資料，請先確認。</p>
+        <input type="file" id="importFile" accept="application/json" style="display:none;">
+        <button class="btn btn-secondary" id="importBtn">⬆️ 選擇備份檔匯入</button>
+        <h3 style="margin:26px 0 10px;font-size:15px;">清空所有資料</h3>
+        <p>刪除這台裝置上儲存的所有訂單、進貨/代理補貨紀錄、商品與支出項設定，此動作無法復原。</p>
+        <button class="btn btn-danger" id="clearAllBtn">🗑️ 清空所有資料</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal-mask" id="introModal">
+  <div class="modal-box" style="max-width:420px;">
+    <h3 style="margin-bottom:12px;">👋 開始使用前，先看這裡</h3>
+    <p>這個工具的所有資料都<strong>只存在「這個瀏覽器」裡</strong>，不會自動上傳、也不會跟其他裝置同步。</p>
+    <p><strong>請務必養成習慣：</strong>三不五時到「💾 備份」頁面按「匯出備份檔」，存一份在雲端硬碟，避免換裝置、清瀏覽器資料時整份記錄不見。</p>
+    <p>手機的話，建議加入主畫面或釘選書籤，之後開啟才會一直抓到同一份資料。</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" id="introGuideBtn">查看完整使用說明</button>
+      <button class="btn btn-primary btn-sm" id="introOkBtn">我知道了，開始使用</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="confirmModal">
+  <div class="modal-box">
+    <h3 id="confirmTitle">確認</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" id="confirmCancel">取消</button>
+      <button class="btn btn-danger btn-sm" id="confirmOk">確定</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+const ORDERS_KEY = "microbiz_orders_v2";
+const GIFTDEFS_KEY = "microbiz_giftdefs_v1";
+const GIFTTIERS_KEY = "microbiz_gifttiers_v1";
+const PURCHASE_BATCHES_KEY = "microbiz_purchase_batches_v1";
+const AGENT_BATCHES_KEY = "microbiz_agent_batches_v1";
+const PRODUCTS_KEY = "microbiz_products_v1";
+const BUYGIFTRULES_KEY = "microbiz_buygiftrules_v1";
+const PRODUCT_SERIES_KEY = "microbiz_productseries_v1";
+const INTRO_SEEN_KEY = "microbiz_intro_seen_v1";
+
+let orders = [];
+let giftDefs = [];
+let giftTiers = [];
+let purchaseBatches = [];
+let agentBatches = [];
+let products = [];
+let buyGiftRules = [];
+let productSeries = [];
+let editingId = null;
+let editingGiftDefId = null;
+let editingTierId = null;
+let editingPbId = null;
+let editingAbId = null;
+let editingPdId = null;
+let editingBgId = null;
+let editingSrId = null;
+let customGiftRowCount = 0;
+let tierGiftRowCount = 0;
+let pbItemRowCount = 0;
+let bgItemRowCount = 0;
+let seriesTierRowCount = 0;
+
+/* ---------- Utils ---------- */
+function uid(p){ return (p||'o_') + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function fmt(n){ return "NT$" + Math.round(n).toLocaleString('zh-TW'); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function monthKey(d){ return d ? d.slice(0,7) : ''; }
+function yearKey(d){ return d ? d.slice(0,4) : ''; }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function loadAll(){
+  try{ orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]'); }catch(e){ orders = []; }
+  try{ giftDefs = JSON.parse(localStorage.getItem(GIFTDEFS_KEY) || '[]'); }catch(e){ giftDefs = []; }
+  try{ giftTiers = JSON.parse(localStorage.getItem(GIFTTIERS_KEY) || '[]'); }catch(e){ giftTiers = []; }
+  try{ purchaseBatches = JSON.parse(localStorage.getItem(PURCHASE_BATCHES_KEY) || '[]'); }catch(e){ purchaseBatches = []; }
+  try{ agentBatches = JSON.parse(localStorage.getItem(AGENT_BATCHES_KEY) || '[]'); }catch(e){ agentBatches = []; }
+  try{ products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]'); }catch(e){ products = []; }
+  try{ buyGiftRules = JSON.parse(localStorage.getItem(BUYGIFTRULES_KEY) || '[]'); }catch(e){ buyGiftRules = []; }
+  try{ productSeries = JSON.parse(localStorage.getItem(PRODUCT_SERIES_KEY) || '[]'); }catch(e){ productSeries = []; }
+}
+function safeSetItem(key, value){
+  try{
+    localStorage.setItem(key, value);
+    return true;
+  }catch(e){
+    alert('⚠️ 儲存失敗！這台裝置的瀏覽器儲存空間可能已滿。\n\n請立即到「💾 備份」頁面匯出備份檔，並考慮刪除較舊或不需要的資料，避免遺失剛剛輸入的內容。');
+    return false;
+  }
+}
+function saveOrders(){ return safeSetItem(ORDERS_KEY, JSON.stringify(orders)); }
+function saveGiftDefs(){ return safeSetItem(GIFTDEFS_KEY, JSON.stringify(giftDefs)); }
+function saveGiftTiers(){ return safeSetItem(GIFTTIERS_KEY, JSON.stringify(giftTiers)); }
+function savePurchaseBatches(){ return safeSetItem(PURCHASE_BATCHES_KEY, JSON.stringify(purchaseBatches)); }
+function saveAgentBatches(){ return safeSetItem(AGENT_BATCHES_KEY, JSON.stringify(agentBatches)); }
+function saveProducts(){ return safeSetItem(PRODUCTS_KEY, JSON.stringify(products)); }
+function saveBuyGiftRules(){ return safeSetItem(BUYGIFTRULES_KEY, JSON.stringify(buyGiftRules)); }
+function saveProductSeries(){ return safeSetItem(PRODUCT_SERIES_KEY, JSON.stringify(productSeries)); }
+
+/* ---------- Storage usage ---------- */
+const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
+function getStorageUsageBytes(){
+  const keys = [ORDERS_KEY, GIFTDEFS_KEY, GIFTTIERS_KEY, PURCHASE_BATCHES_KEY, AGENT_BATCHES_KEY, PRODUCTS_KEY, BUYGIFTRULES_KEY, PRODUCT_SERIES_KEY];
+  let total = 0;
+  keys.forEach(k=>{
+    const v = localStorage.getItem(k);
+    if(v) total += new Blob([v]).size;
+  });
+  return total;
+}
+function fmtBytes(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(2) + ' MB';
+}
+function renderStorageUsage(){
+  const bar = document.getElementById('storageBar');
+  const text = document.getElementById('storageText');
+  if(!bar || !text) return;
+  const used = getStorageUsageBytes();
+  const pct = Math.min(100, (used/STORAGE_QUOTA_BYTES)*100);
+  bar.style.width = pct + '%';
+  bar.style.background = pct>90 ? 'var(--danger)' : (pct>70 ? 'var(--amber)' : 'var(--sage)');
+  let msg = `已使用約 ${fmtBytes(used)} ／ 5 MB（約 ${pct.toFixed(1)}%）`;
+  if(pct>90) msg += '　⚠️ 空間快滿了，請盡快匯出備份，並考慮刪除較舊的資料';
+  else if(pct>70) msg += '　建議定期匯出備份';
+  text.textContent = msg;
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function confirmDialog(title, msg, onOk){
+  const modal = document.getElementById('confirmModal');
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  modal.classList.add('show');
+  const ok = document.getElementById('confirmOk');
+  const cancel = document.getElementById('confirmCancel');
+  function cleanup(){ modal.classList.remove('show'); ok.onclick=null; cancel.onclick=null; }
+  ok.onclick = ()=>{ cleanup(); onOk(); };
+  cancel.onclick = cleanup;
+}
+
+/* ---------- Intro modal ---------- */
+function checkIntro(){
+  if(!localStorage.getItem(INTRO_SEEN_KEY)){
+    document.getElementById('introModal').classList.add('show');
+  }
+}
+document.getElementById('introOkBtn').addEventListener('click', ()=>{
+  localStorage.setItem(INTRO_SEEN_KEY, '1');
+  document.getElementById('introModal').classList.remove('show');
+});
+document.getElementById('introGuideBtn').addEventListener('click', ()=>{
+  localStorage.setItem(INTRO_SEEN_KEY, '1');
+  document.getElementById('introModal').classList.remove('show');
+  goTo('guide');
+});
+
+/* ---------- Gift defs helpers ---------- */
+function getGiftDef(id){ return giftDefs.find(g=>g.id===id); }
+function unitCost(def){
+  if(!def) return 0;
+  const q = num(def.batchQty);
+  if(q<=0) return 0;
+  return (num(def.batchCost) + num(def.shipping) + num(def.tariff)) / q;
+}
+function giftDefOptionsHtml(selectedId){
+  if(giftDefs.length===0) return '<option value="">尚未建立支出項，請先到「支出項設定」新增</option>';
+  return '<option value="">請選擇支出項</option>' + giftDefs.map(g=>
+    `<option value="${g.id}" ${g.id===selectedId?'selected':''}>${escapeHtml(g.name)}（單個 ${fmt(unitCost(g))}）</option>`
+  ).join('');
+}
+
+/* ---------- Product helpers ---------- */
+function getProduct(id){ return products.find(p=>p.id===id); }
+function productOptionsHtml(selectedId){
+  if(products.length===0) return '<option value="">尚未建立商品，請先到「商品設定」新增</option>';
+  return '<option value="">請選擇商品</option>' + products.map(p=>
+    `<option value="${p.id}" ${p.id===selectedId?'selected':''}>${escapeHtml(p.name)}</option>`
+  ).join('');
+}
+function renderBuyGiftRuleProductSelect(){
+  const sel = document.getElementById('bg_productId');
+  const cur = sel.value;
+  sel.innerHTML = productOptionsHtml();
+  sel.value = cur;
+}
+
+/* ---------- Product Series (批發) helpers ---------- */
+function getSeries(id){ return productSeries.find(s=>s.id===id); }
+function seriesOptionsHtml(selectedId){
+  if(productSeries.length===0) return '<option value="">尚未建立批發系列，請先到「商品設定」新增</option>';
+  return '<option value="">請選擇批發系列</option>' + productSeries.map(s=>
+    `<option value="${s.id}" ${s.id===selectedId?'selected':''}>${escapeHtml(s.name)}</option>`
+  ).join('');
+}
+function renderOrderSeriesSelect(){
+  const sel = document.getElementById('f_seriesId');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = seriesOptionsHtml();
+  sel.value = cur;
+}
+function renderRetailQuickSeriesSelect(){
+  const sel = document.getElementById('f_retailQuickSeries');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = seriesOptionsHtml();
+  sel.value = cur;
+}
+function renderPbQuickSeriesSelect(){
+  const sel = document.getElementById('pb_quickSeries');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = seriesOptionsHtml();
+  sel.value = cur;
+}
+function tierLabel(t){
+  return `${num(t.minQty)}${t.maxQty!==''&&t.maxQty!=null&&t.maxQty!==undefined?'~'+num(t.maxQty):'+'}盒`;
+}
+function findSeriesTier(series, totalBoxes){
+  if(!series || totalBoxes<=0) return null;
+  const eligible = (series.tiers||[]).filter(t=> num(t.minQty) <= totalBoxes && (t.maxQty===''||t.maxQty==null||t.maxQty===undefined || totalBoxes <= num(t.maxQty)));
+  eligible.sort((a,b)=> num(b.minQty)-num(a.minQty));
+  return eligible[0] || null;
+}
+function getProductSeries(productId){
+  if(!productId) return null;
+  return productSeries.find(s=> (s.productIds||[]).includes(productId)) || null;
+}
+function findSeriesPriceTier(seriesId, totalQty){
+  const series = getSeries(seriesId);
+  if(!series || !(series.priceTiers||[]).length) return null;
+  return series.priceTiers.find(t=> num(t.qty)===num(totalQty)) || null;
+}
+function currentStock(productId){
+  const p = getProduct(productId);
+  if(!p) return 0;
+  let stock = num(p.initialStock);
+  purchaseBatches.forEach(b=> (b.items||[]).forEach(it=>{ if(it.productId===productId) stock += num(it.qty); }));
+  orders.forEach(o=>{
+    if((o.orderMode||'retail')==='wholesale'){
+      (o.wholesaleItems||[]).forEach(it=>{ if(it.productId===productId) stock -= num(it.qty); });
+    }else if(o.retailItems && o.retailItems.length){
+      o.retailItems.forEach(it=>{ if(it.productId===productId) stock -= num(it.qty); });
+    }else{
+      if(o.productId===productId) stock -= num(o.productQty);
+    }
+  });
+  return stock;
+}
+
+/* ---------- Order calculations ---------- */
+function findMatchedTier(combinedAmount){
+  if(combinedAmount<=0 || giftTiers.length===0) return null;
+  const eligible = giftTiers.filter(t=> num(t.threshold) <= combinedAmount).sort((a,b)=> num(b.threshold)-num(a.threshold));
+  return eligible[0] || null;
+}
+function tierCost(tier){
+  if(!tier) return 0;
+  return (tier.items||[]).reduce((s,it)=> s + num(it.qty)*unitCost(getGiftDef(it.giftDefId)), 0);
+}
+function findMatchedProductRule(productId, qty){
+  if(!productId || num(qty)<=0 || buyGiftRules.length===0) return null;
+  const eligible = buyGiftRules.filter(r=> r.productId===productId && num(qty) >= num(r.minQty)).sort((a,b)=> num(b.minQty)-num(a.minQty));
+  return eligible[0] || null;
+}
+function productRuleCost(rule){
+  if(!rule) return 0;
+  return (rule.items||[]).reduce((s,it)=> s + num(it.qty)*unitCost(getGiftDef(it.giftDefId)), 0);
+}
+function calcOrder(o){
+  const freeShip = num(o.freeShipping);
+  const websiteCost = num(o.websiteCost);
+  const shopeeFee = num(o.shopeeFee);
+  const agentCostTotal = num(o.agentAmount);
+  const mode = o.orderMode || 'retail';
+
+  // 零售品項（多品項購物車）
+  const retailItems = (o.retailItems && o.retailItems.length) ? o.retailItems
+    : (o.productId ? [{ productId:o.productId, qty:o.productQty, amount:'' }] : []);
+  const retailProductCost = retailItems.reduce((s,it)=> s + avgUnitCostForProduct(it.productId)*num(it.qty), 0);
+  const retailAmount = retailItems.reduce((s,it)=> s + num(it.amount), 0);
+  const matchedProductRules = [];
+  let matchedProductRuleCost = 0;
+  retailItems.forEach(it=>{
+    const rule = findMatchedProductRule(it.productId, it.qty);
+    if(rule){ matchedProductRules.push({ rule, productId: it.productId }); matchedProductRuleCost += productRuleCost(rule); }
+  });
+
+  // 批發混批
+  let wholesaleTotalBoxes = 0, wholesaleTier = null, wholesaleAmount = 0, wholesaleProductCost = 0;
+  if(mode==='wholesale'){
+    const series = getSeries(o.seriesId);
+    const items = o.wholesaleItems || [];
+    wholesaleTotalBoxes = items.reduce((s,it)=> s + num(it.qty), 0);
+    wholesaleTier = findSeriesTier(series, wholesaleTotalBoxes);
+    wholesaleAmount = wholesaleTier ? wholesaleTotalBoxes * num(wholesaleTier.pricePerBox) : 0;
+    wholesaleProductCost = items.reduce((s,it)=> s + avgUnitCostForProduct(it.productId)*num(it.qty), 0);
+  }
+
+  const productCostAuto = mode==='wholesale' ? wholesaleProductCost : retailProductCost;
+  const hasCostOverride = o.costOverride !== undefined && o.costOverride !== null && o.costOverride !== '';
+  const productCostTotal = hasCostOverride ? num(o.costOverride) : productCostAuto;
+
+  const wholesaleAmountAuto = wholesaleAmount;
+  const hasWholesaleOverride = mode==='wholesale' && o.wholesaleAmountOverride !== undefined && o.wholesaleAmountOverride !== null && o.wholesaleAmountOverride !== '';
+  if(hasWholesaleOverride) wholesaleAmount = num(o.wholesaleAmountOverride);
+
+  const combinedAmount = mode==='wholesale' ? 0 : (num(o.websiteAmount) + num(o.shoplineAmount) + num(o.meetupAmount));
+  const matchedTier = findMatchedTier(combinedAmount);
+  const matchedTierCost = tierCost(matchedTier);
+
+  const customGiftCost = (o.customGiftItems || o.shopeeGiftItems || []).reduce((s,it)=> s + num(it.qty)*unitCost(getGiftDef(it.giftDefId)), 0);
+
+  const productRuleGiftCost = mode==='wholesale' ? 0 : matchedProductRuleCost;
+  const autoGiftCostCalc = o.noGift ? 0 : (matchedTierCost + productRuleGiftCost);
+  const hasGiftCostOverride = o.giftCostOverride !== undefined && o.giftCostOverride !== null && o.giftCostOverride !== '';
+  const autoGiftCost = hasGiftCostOverride ? num(o.giftCostOverride) : autoGiftCostCalc;
+  const giftTotalCost = autoGiftCost + customGiftCost;
+  const costTotal = productCostTotal + agentCostTotal + giftTotalCost + freeShip + websiteCost + shopeeFee;
+  const revenueTotal = num(o.websiteAmount) + num(o.shopeeAmount) + num(o.shoplineAmount) + num(o.meetupAmount) + wholesaleAmount + retailAmount;
+  const profitTotal = revenueTotal - costTotal;
+  const margin = revenueTotal > 0 ? (profitTotal/revenueTotal*100) : 0;
+
+  return { mode, retailItems, retailProductCost, retailAmount, matchedProductRules, matchedProductRuleCost: productRuleGiftCost,
+    productCostTotal, productCostAuto, hasCostOverride, wholesaleTotalBoxes, wholesaleTier, wholesaleAmount, wholesaleAmountAuto, hasWholesaleOverride, matchedTier, matchedTierCost,
+    autoGiftCost, autoGiftCostCalc, hasGiftCostOverride, customGiftCost, giftTotalCost, agentCostTotal, costTotal, revenueTotal, profitTotal, margin, combinedAmount };
+}
+
+/* ---------- Navigation ---------- */
+const pages = ['dashboard','list','form','stockLedger','productSettings','giftSettings','productReport','daily','monthly','yearly','backup','guide'];
+function goTo(page, opts){
+  opts = opts || {};
+  pages.forEach(p=> document.getElementById('page-'+p).classList.toggle('active', p===page));
+  document.querySelectorAll('.nav-item').forEach(btn=> btn.classList.toggle('active', btn.dataset.page===page));
+  if(page==='dashboard') renderDashboard();
+  if(page==='list') renderList();
+  if(page==='stockLedger'){ renderPurchaseBatchTable(); renderPbQuickSeriesSelect(); }
+  if(page==='productSettings'){ renderProductTable(); renderBuyGiftRuleTable(); renderBuyGiftRuleProductSelect(); renderSeriesTable(); }
+  if(page==='giftSettings'){ renderGiftDefTable(); renderGiftTierTable(); }
+  if(page==='productReport'){ renderProductSalesReport(); renderSeriesReport(); }
+  if(page==='backup') renderStorageUsage();
+  if(page==='daily') renderDaily();
+  if(page==='monthly') renderMonthly();
+  if(page==='yearly') renderYearly();
+  if(page==='form' && !opts.keepForm) resetForm();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-page]').forEach(el=> el.addEventListener('click', ()=> goTo(el.dataset.page)));
+
+/* ---------- Dashboard ---------- */
+function renderDashboard(){
+  const now = new Date();
+  const curMonth = now.toISOString().slice(0,7);
+  const monthOrders = orders.filter(o=> monthKey(o.orderDate)===curMonth);
+  let revenue=0, cost=0, profit=0;
+  monthOrders.forEach(o=>{ const c = calcOrder(o); revenue+=c.revenueTotal; cost+=c.costTotal; profit+=c.profitTotal; });
+  let allProfit=0;
+  orders.forEach(o=>{ allProfit += calcOrder(o).profitTotal; });
+
+  const cards = [
+    { label:'本月訂單數', value: monthOrders.length + ' 筆', cls:'' },
+    { label:'本月營收', value: fmt(revenue), cls:'blue' },
+    { label:'本月成本', value: fmt(cost), cls:'pink' },
+    { label:'本月淨利', value: fmt(profit), cls: profit>=0?'sage':'dark', valCls: profit>=0?'pos':'neg' },
+    { label:'累計總淨利', value: fmt(allProfit), cls:'dark', valCls: allProfit>=0?'pos':'neg' },
+  ];
+  document.getElementById('dashboardCards').innerHTML = cards.map(c=>`
+    <div class="stat-card ${c.cls}"><div class="stat-label">${c.label}</div><div class="stat-value ${c.valCls||''}">${c.value}</div></div>`).join('');
+
+  const recent = [...orders].sort((a,b)=> (b.orderDate||'').localeCompare(a.orderDate||'')).slice(0,6);
+  document.getElementById('dashboardRecent').innerHTML = buildTable(recent, false);
+  bindRowActions('dashboardRecent');
+}
+
+/* ---------- List page ---------- */
+function getFiltered(){
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const start = document.getElementById('filterStart').value;
+  const end = document.getElementById('filterEnd').value;
+  const platform = document.getElementById('filterPlatform').value;
+  return orders.filter(o=>{
+    if(q){
+      const series = getSeries(o.seriesId);
+      const retailNames = (o.retailItems||[]).map(it=>{ const p=getProduct(it.productId); return p?p.name:''; }).join(' ');
+      const hay = ((o.productName||'') + ' ' + (series?series.name:'') + ' ' + retailNames).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    if(start && o.orderDate && o.orderDate < start) return false;
+    if(end && o.orderDate && o.orderDate > end) return false;
+    if(platform==='website' && !(num(o.websiteAmount)>0)) return false;
+    if(platform==='shopee' && !(num(o.shopeeAmount)>0)) return false;
+    if(platform==='shopline' && !(num(o.shoplineAmount)>0)) return false;
+    if(platform==='meetup' && !(num(o.meetupAmount)>0)) return false;
+    if(platform==='wholesale' && (o.orderMode!=='wholesale')) return false;
+    if(platform==='retail' && !((o.retailItems||[]).some(it=> num(it.amount)>0))) return false;
+    return true;
+  }).sort((a,b)=> (b.orderDate||'').localeCompare(a.orderDate||''));
+}
+function renderList(){
+  const list = getFiltered();
+  document.getElementById('listTableWrap').innerHTML = buildTable(list, true);
+  bindRowActions('listTableWrap');
+}
+['searchInput','filterStart','filterEnd','filterPlatform'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderList);
+  document.getElementById(id).addEventListener('change', renderList);
+});
+document.getElementById('clearFilterBtn').addEventListener('click', ()=>{
+  document.getElementById('searchInput').value='';
+  document.getElementById('filterStart').value='';
+  document.getElementById('filterEnd').value='';
+  document.getElementById('filterPlatform').value='';
+  renderList();
+});
+
+function buildTable(list, showActions){
+  if(list.length===0) return `<div class="empty-state"><div class="emoji">🌿</div>還沒有任何訂單，點選右上角「新增訂單」開始記帳吧</div>`;
+  const rows = list.map(o=>{
+    const c = calcOrder(o);
+    let label, qtyDisplay;
+    if(c.mode==='wholesale'){
+      const series = getSeries(o.seriesId);
+      label = (series?series.name:'（系列已刪除）') + '（批發）';
+      qtyDisplay = c.wholesaleTotalBoxes + ' 盒';
+    }else{
+      const items = c.retailItems || [];
+      if(items.length){
+        label = items.map(it=>{ const p=getProduct(it.productId); return p?p.name:'（已刪除）'; }).join('、');
+        qtyDisplay = items.reduce((s,it)=> s+num(it.qty), 0);
+      }else{
+        label = o.productName || '—';
+        qtyDisplay = o.productQty || 0;
+      }
+    }
+    return `<tr>
+      <td>${o.orderDate||'—'}</td>
+      <td>${escapeHtml(label)}</td>
+      <td class="num">${qtyDisplay}</td>
+      <td class="num">${fmt(c.revenueTotal)}</td>
+      <td class="num">${fmt(c.costTotal)}</td>
+      <td class="num ${c.profitTotal>=0?'profit-pos':'profit-neg'}">${fmt(c.profitTotal)}</td>
+      ${showActions? `<td><button class="btn btn-ghost btn-sm" data-edit="${o.id}">編輯</button> <button class="btn btn-danger btn-sm" data-del="${o.id}">刪除</button></td>`:''}
+    </tr>`;
+  }).join('');
+  return `<table><thead><tr><th>日期</th><th>售出產品</th><th>數量</th><th>訂單金額</th><th>成本</th><th>利潤</th>${showActions?'<th>操作</th>':''}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+function bindRowActions(containerId){
+  const c = document.getElementById(containerId);
+  c.querySelectorAll('[data-edit]').forEach(btn=> btn.addEventListener('click', ()=> editOrder(btn.dataset.edit)));
+  c.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      confirmDialog('刪除訂單', '確定要刪除這筆訂單嗎？此動作無法復原。', ()=>{
+        orders = orders.filter(o=>o.id!==btn.dataset.del);
+        saveOrders(); renderList(); renderDashboard();
+        showToast('已刪除訂單');
+      });
+    });
+  });
+}
+
+/* ---------- Order form: dynamic rows ---------- */
+function addCustomGiftRow(item){
+  item = item || { giftDefId:'', qty:'' };
+  customGiftRowCount++;
+  const wrap = document.createElement('div');
+  wrap.className = 'dyn-row cols3';
+  wrap.innerHTML = `
+    <div class="field"><label>支出項</label><select class="cg-def">${giftDefOptionsHtml(item.giftDefId)}</select></div>
+    <div class="field"><label>數量</label><input type="number" class="cg-qty" min="0" value="${item.qty}"></div>
+    <button type="button" class="dyn-remove" title="刪除此項">✕</button>`;
+  wrap.querySelectorAll('input,select').forEach(inp=> inp.addEventListener('input', updateCalc));
+  wrap.querySelector('.dyn-remove').addEventListener('click', ()=>{ wrap.remove(); updateCalc(); });
+  document.getElementById('customGiftRows').appendChild(wrap);
+}
+document.getElementById('addCustomGiftRow').addEventListener('click', ()=> addCustomGiftRow());
+function collectCustomGiftItems(){
+  return [...document.querySelectorAll('#customGiftRows .dyn-row')].map(row=>({
+    giftDefId: row.querySelector('.cg-def').value,
+    qty: row.querySelector('.cg-qty').value,
+  }));
+}
+
+/* ---------- Order form: 零售品項（多品項購物車） ---------- */
+function addRetailItemRow(item){
+  item = item || { productId:'', qty:'', amount:'' };
+  const wrap = document.createElement('div');
+  wrap.className = 'dyn-row cols4';
+  wrap.innerHTML = `
+    <div class="field"><label>商品</label><select class="rt-product">${productOptionsHtml(item.productId)}</select></div>
+    <div class="field"><label>數量</label><input type="number" class="rt-qty" min="0" value="${item.qty}"></div>
+    <div class="field"><label>金額</label><input type="number" class="rt-amount" min="0" step="0.01" value="${item.amount}"></div>
+    <button type="button" class="dyn-remove" title="刪除此項">✕</button>`;
+  wrap.querySelectorAll('.rt-product,.rt-qty').forEach(el=> el.addEventListener('input', updateCalc));
+  wrap.querySelectorAll('.rt-product,.rt-qty').forEach(el=> el.addEventListener('change', updateCalc));
+  wrap.querySelector('.rt-amount').addEventListener('input', updateCalc);
+  wrap.querySelector('.dyn-remove').addEventListener('click', ()=>{ wrap.remove(); updateCalc(); });
+  document.getElementById('retailItemRows').appendChild(wrap);
+}
+document.getElementById('addRetailItemRow').addEventListener('click', ()=> addRetailItemRow());
+function collectRetailItems(){
+  return [...document.querySelectorAll('#retailItemRows .dyn-row')].map(row=>({
+    productId: row.querySelector('.rt-product').value,
+    qty: row.querySelector('.rt-qty').value,
+    amount: row.querySelector('.rt-amount').value,
+  })).filter(it=> it.productId && (num(it.qty)>0 || num(it.amount)>0));
+}
+document.getElementById('retailQuickAddSeriesBtn').addEventListener('click', function(){
+  const seriesId = document.getElementById('f_retailQuickSeries').value;
+  const series = getSeries(seriesId);
+  if(!series){ showToast('請先選擇批發系列'); return; }
+  const existingIds = [...document.querySelectorAll('#retailItemRows .rt-product')].map(sel=>sel.value);
+  (series.productIds||[]).forEach(pid=>{
+    if(!existingIds.includes(pid)) addRetailItemRow({ productId: pid, qty:'', amount:'' });
+  });
+  updateCalc();
+});
+
+/* ---------- Order form: 批發混批項目 ---------- */
+function renderWholesaleItemRows(seriesId, qtyMap){
+  qtyMap = qtyMap || {};
+  const wrap = document.getElementById('wholesaleItemRows');
+  const series = getSeries(seriesId);
+  if(!series || !(series.productIds||[]).length){
+    wrap.innerHTML = '<div class="hint">請先選擇批發系列（系列內要先在「商品設定」勾選商品）</div>';
+    return;
+  }
+  wrap.innerHTML = series.productIds.map(pid=>{
+    const p = getProduct(pid);
+    const name = p ? escapeHtml(p.name) : '（商品已刪除）';
+    const qty = qtyMap[pid] || 0;
+    return `<div class="field" data-pid="${pid}" style="margin-bottom:10px;">
+      <label>${name}</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button type="button" class="btn btn-ghost btn-sm ws-minus" style="padding:8px 14px;">－</button>
+        <input type="number" class="ws-qty" min="0" value="${qty}" style="text-align:center;max-width:90px;">
+        <button type="button" class="btn btn-ghost btn-sm ws-plus" style="padding:8px 14px;">＋</button>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.ws-minus').forEach(btn=> btn.addEventListener('click', ()=>{
+    const inp = btn.parentElement.querySelector('.ws-qty');
+    inp.value = Math.max(0, num(inp.value)-1);
+    updateCalc();
+  }));
+  wrap.querySelectorAll('.ws-plus').forEach(btn=> btn.addEventListener('click', ()=>{
+    const inp = btn.parentElement.querySelector('.ws-qty');
+    inp.value = num(inp.value)+1;
+    updateCalc();
+  }));
+  wrap.querySelectorAll('.ws-qty').forEach(inp=> inp.addEventListener('input', updateCalc));
+}
+function collectWholesaleItems(){
+  return [...document.querySelectorAll('#wholesaleItemRows [data-pid]')].map(row=>({
+    productId: row.dataset.pid,
+    qty: row.querySelector('.ws-qty').value,
+  })).filter(it=> num(it.qty)>0);
+}
+function applyOrderModeUI(mode){
+  document.getElementById('retailModeBox').style.display = mode==='retail' ? '' : 'none';
+  document.getElementById('wholesaleModeBox').style.display = mode==='wholesale' ? '' : 'none';
+  document.getElementById('wholesaleAmountCard').style.display = mode==='wholesale' ? '' : 'none';
+}
+document.getElementById('f_orderMode').addEventListener('change', function(){
+  applyOrderModeUI(this.value);
+  updateCalc();
+});
+document.getElementById('f_seriesId').addEventListener('change', function(){
+  renderWholesaleItemRows(this.value, {});
+  updateCalc();
+});
+
+const formFieldIds = [
+  'orderDate','orderMode','seriesId',
+  'agentName','agentQty','agentAmount','agentDate',
+  'freeShipping',
+  'websiteAmount','websiteCost','shopeeAmount','shopeeFee','shoplineAmount','meetupAmount',
+  'costOverride','wholesaleAmountOverride','giftCostOverride',
+  'note'
+];
+
+function resetForm(){
+  editingId = null;
+  document.getElementById('formTitle').textContent = '新增訂單';
+  document.getElementById('orderId').value = '';
+  formFieldIds.forEach(id=>{ const el = document.getElementById('f_'+id); if(el) el.value=''; });
+  document.getElementById('f_orderDate').value = todayStr();
+  document.getElementById('f_orderMode').value = 'retail';
+  renderRetailQuickSeriesSelect();
+  document.getElementById('f_retailQuickSeries').value = '';
+  document.getElementById('retailItemRows').innerHTML = '';
+  addRetailItemRow();
+  renderOrderSeriesSelect();
+  document.getElementById('f_seriesId').value = '';
+  document.getElementById('wholesaleItemRows').innerHTML = '';
+  document.getElementById('f_noGift').checked = false;
+  document.getElementById('customGiftRows').innerHTML = '';
+  applyOrderModeUI('retail');
+  updateCalc();
+}
+document.getElementById('resetFormBtn').addEventListener('click', ()=>{
+  confirmDialog('清空表單', '確定要清空目前輸入的內容嗎？', resetForm);
+});
+
+function editOrder(id){
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = '編輯訂單';
+  document.getElementById('orderId').value = id;
+  formFieldIds.forEach(id2=>{
+    const el = document.getElementById('f_'+id2);
+    if(el) el.value = o[id2] !== undefined && o[id2] !== null ? o[id2] : '';
+  });
+  const mode = o.orderMode || 'retail';
+  document.getElementById('f_orderMode').value = mode;
+  renderRetailQuickSeriesSelect();
+  document.getElementById('f_retailQuickSeries').value = '';
+  document.getElementById('retailItemRows').innerHTML = '';
+  const retailItems = (o.retailItems && o.retailItems.length) ? o.retailItems
+    : (o.productId ? [{ productId:o.productId, qty:o.productQty, amount:'' }] : []);
+  if(retailItems.length){ retailItems.forEach(it=> addRetailItemRow(it)); } else { addRetailItemRow(); }
+  renderOrderSeriesSelect();
+  document.getElementById('f_seriesId').value = o.seriesId || '';
+  const qtyMap = {};
+  (o.wholesaleItems||[]).forEach(it=> qtyMap[it.productId] = it.qty);
+  renderWholesaleItemRows(o.seriesId || '', qtyMap);
+  document.getElementById('f_noGift').checked = !!o.noGift;
+  document.getElementById('customGiftRows').innerHTML = '';
+  (o.customGiftItems || o.shopeeGiftItems || []).forEach(it=> addCustomGiftRow(it));
+  applyOrderModeUI(mode);
+  updateCalc();
+  goTo('form', {keepForm:true});
+}
+
+function gatherFormData(){
+  const data = {
+    noGift: document.getElementById('f_noGift').checked,
+    customGiftItems: collectCustomGiftItems(),
+    retailItems: collectRetailItems(),
+    wholesaleItems: collectWholesaleItems(),
+  };
+  formFieldIds.forEach(id=> data[id] = document.getElementById('f_'+id).value);
+  return data;
+}
+
+function updateCalc(){
+  const data = gatherFormData();
+  const c = calcOrder(data);
+  document.getElementById('calcRevenue').textContent = fmt(c.revenueTotal);
+  document.getElementById('calcCost').textContent = fmt(c.costTotal);
+  const profitEl = document.getElementById('calcProfit');
+  profitEl.textContent = fmt(c.profitTotal);
+  profitEl.classList.toggle('pos', c.profitTotal>=0);
+  profitEl.classList.toggle('neg', c.profitTotal<0);
+  document.getElementById('calcMargin').textContent = c.margin.toFixed(1) + '%';
+
+  const pcBox = document.getElementById('productCostBox');
+  if(c.mode==='wholesale'){
+    if(!data.seriesId || c.wholesaleTotalBoxes<=0){
+      pcBox.className = 'gift-auto-box empty';
+      pcBox.innerHTML = '選擇批發系列並輸入各商品數量後，會自動估算進貨成本';
+    }else if(c.hasCostOverride){
+      pcBox.className = 'gift-auto-box';
+      pcBox.innerHTML = `✏️ 已手動調整為 <b>${fmt(c.productCostTotal)}</b>（自動估算原為 ${fmt(c.productCostAuto)}）`;
+    }else{
+      pcBox.className = 'gift-auto-box';
+      pcBox.innerHTML = `依各商品的平均進貨單價加總，這筆訂單的進貨成本約 <b>${fmt(c.productCostTotal)}</b>`;
+    }
+    const wsBox = document.getElementById('wholesaleSummaryBox');
+    const waBox = document.getElementById('wholesaleAmountBox');
+    if(!data.seriesId){
+      wsBox.className = 'gift-auto-box empty'; wsBox.innerHTML = '請選擇批發系列';
+      waBox.className = 'gift-auto-box empty'; waBox.innerHTML = '請選擇批發系列並輸入數量';
+    }else if(c.wholesaleTotalBoxes<=0){
+      wsBox.className = 'gift-auto-box empty'; wsBox.innerHTML = '請輸入各商品數量';
+      waBox.className = 'gift-auto-box empty'; waBox.innerHTML = '請輸入各商品數量';
+    }else{
+      wsBox.className = c.wholesaleTier ? 'gift-auto-box' : 'gift-auto-box empty';
+      wsBox.innerHTML = c.wholesaleTier
+        ? `總盒數 <b>${c.wholesaleTotalBoxes}</b> 盒，符合級距 <b>${tierLabel(c.wholesaleTier)}</b>，批發單價 <b>${fmt(c.wholesaleTier.pricePerBox)}</b>／盒`
+        : `總盒數 <b>${c.wholesaleTotalBoxes}</b> 盒，尚未設定符合的批發級距`;
+      if(c.hasWholesaleOverride){
+        waBox.className = 'gift-auto-box';
+        waBox.innerHTML = `✏️ 已手動調整為 <b>${fmt(c.wholesaleAmount)}</b>（自動估算原為 ${fmt(c.wholesaleAmountAuto)}）`;
+      }else if(!c.wholesaleTier){
+        waBox.className = 'gift-auto-box empty'; waBox.innerHTML = '尚未設定符合的批發級距，無法自動計算金額，可在下方手動填入';
+      }else{
+        waBox.className = 'gift-auto-box';
+        waBox.innerHTML = `${c.wholesaleTotalBoxes} 盒 × ${fmt(c.wholesaleTier.pricePerBox)} ＝ 訂單金額 <b>${fmt(c.wholesaleAmount)}</b>`;
+      }
+    }
+  }else{
+    const hasItems = data.retailItems.length>0;
+    if(!hasItems){
+      pcBox.className = 'gift-auto-box empty';
+      pcBox.innerHTML = '新增品項後，系統會依照「進貨紀錄」自動估算這筆訂單的進貨成本';
+    }else if(c.hasCostOverride){
+      pcBox.className = 'gift-auto-box';
+      pcBox.innerHTML = `✏️ 已手動調整為 <b>${fmt(c.productCostTotal)}</b>（自動估算原為 ${fmt(c.productCostAuto)}）`;
+    }else{
+      pcBox.className = 'gift-auto-box';
+      pcBox.innerHTML = `依各品項的平均進貨單價加總，這筆訂單的進貨成本約 <b>${fmt(c.productCostTotal)}</b>`;
+    }
+    const raBox = document.getElementById('retailAmountBox');
+    if(!hasItems){
+      raBox.className = 'gift-auto-box empty';
+      raBox.innerHTML = '請新增品項並輸入數量';
+    }else{
+      const lines2 = data.retailItems.map(it=>{
+        const p = getProduct(it.productId);
+        return `${p?escapeHtml(p.name):'（商品已刪除）'} ×${num(it.qty)}${num(it.amount)>0?'（'+fmt(it.amount)+'）':''}`;
+      }).join('、');
+      // 依系列彙總合計數量，比對系列優惠價格
+      const seriesQtyMap = {};
+      data.retailItems.forEach(it=>{
+        const s = getProductSeries(it.productId);
+        if(s){ seriesQtyMap[s.id] = (seriesQtyMap[s.id]||0) + num(it.qty); }
+      });
+      const seriesLines = Object.keys(seriesQtyMap).map(sid=>{
+        const s = getSeries(sid);
+        const qty = seriesQtyMap[sid];
+        const tier = findSeriesPriceTier(sid, qty);
+        if(!s) return '';
+        return tier
+          ? `🏷️ ${escapeHtml(s.name)} 合計 ${qty} 件，符合優惠價 <b>${fmt(tier.price)}</b>（僅供參考，請自行填入上方金額欄）`
+          : `${escapeHtml(s.name)} 合計 ${qty} 件，尚無符合的優惠價格`;
+      }).filter(Boolean);
+      raBox.className = 'gift-auto-box';
+      raBox.innerHTML = [lines2, ...seriesLines, `零售通路金額合計：<b>${fmt(c.retailAmount)}</b>`].join('<br>');
+    }
+  }
+
+  const box = document.getElementById('giftAutoBox');
+  const lines = [];
+  if(c.hasGiftCostOverride){
+    lines.push(`✏️ 已手動調整滿額禮／買就送成本為 <b>${fmt(c.autoGiftCost)}</b>（自動判定原為 ${fmt(c.autoGiftCostCalc)}）`);
+  }
+  if(data.noGift && !c.hasGiftCostOverride){
+    lines.push('已勾選「客人不要禮物」，滿額禮／買就送本單不計算成本');
+  }else if(!c.hasGiftCostOverride){
+    if(c.mode!=='wholesale' && c.combinedAmount>0){
+      if(c.matchedTier){
+        const giftNames = (c.matchedTier.items||[]).map(it=>{
+          const def = getGiftDef(it.giftDefId);
+          return `${def?escapeHtml(def.name):'（支出項已刪除）'} ×${it.qty}`;
+        }).join('、');
+        lines.push(`🏷️ 滿額禮：合併金額 <b>${fmt(c.combinedAmount)}</b>，達成「<b>${escapeHtml(c.matchedTier.label || ('滿'+c.matchedTier.threshold))}</b>」→ ${giftNames || '（尚未設定支出項）'}｜成本 <b>${fmt(c.matchedTierCost)}</b>`);
+      }else{
+        lines.push(`合併金額 <b>${fmt(c.combinedAmount)}</b>（官網＋賣貨便＋面交），尚未達到任何滿額禮門檻`);
+      }
+    }
+    if(c.matchedProductRules && c.matchedProductRules.length){
+      c.matchedProductRules.forEach(m=>{
+        const p = getProduct(m.productId);
+        const giftNames = (m.rule.items||[]).map(it=>{
+          const def = getGiftDef(it.giftDefId);
+          return `${def?escapeHtml(def.name):'（支出項已刪除）'} ×${it.qty}`;
+        }).join('、');
+        lines.push(`🛍️ 買就送（${p?escapeHtml(p.name):'商品'}）：${giftNames || '（尚未設定支出項）'}｜成本 <b>${fmt(productRuleCost(m.rule))}</b>`);
+      });
+    }
+  }
+  if(c.customGiftCost>0){
+    lines.push(`自訂贈品成本：<b>${fmt(c.customGiftCost)}</b>`);
+  }
+  if(lines.length===0){
+    box.className = 'gift-auto-box empty';
+    box.innerHTML = c.mode==='wholesale' ? '批發訂單沒有自動滿額禮／買就送，如需送贈品請用下方「自訂贈品」' : '請先填寫官網／賣貨便／面交金額、或新增有設定買就送規則的商品';
+  }else{
+    box.className = (data.noGift && !c.hasGiftCostOverride) ? 'gift-auto-box empty' : 'gift-auto-box';
+    box.innerHTML = lines.join('<br>');
+  }
+}
+document.getElementById('orderForm').addEventListener('input', updateCalc);
+document.getElementById('orderForm').addEventListener('change', updateCalc);
+
+document.getElementById('orderForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const data = gatherFormData();
+  if(editingId){
+    const idx = orders.findIndex(o=>o.id===editingId);
+    if(idx>-1) orders[idx] = { ...orders[idx], ...data };
+  }else{
+    data.id = uid('o_');
+    orders.push(data);
+  }
+  if(saveOrders()){
+    showToast(editingId ? '已更新訂單' : '已新增訂單');
+    goTo('list');
+  }
+});
+
+/* ---------- Gift Settings: 支出項 ---------- */
+function renderGiftDefTable(){
+  const wrap = document.getElementById('giftDefTableWrap');
+  if(giftDefs.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🧾</div>還沒有建立任何支出項，先在上方新增一個吧</div>`; return; }
+  const rows = giftDefs.map(g=>`
+    <tr>
+      <td>${escapeHtml(g.name)}</td>
+      <td class="num">${num(g.batchQty)}</td>
+      <td class="num">${fmt(g.batchCost)}</td>
+      <td class="num">${fmt(g.shipping)}</td>
+      <td class="num">${fmt(g.tariff)}</td>
+      <td class="num" style="font-weight:700;">${fmt(unitCost(g))}</td>
+      <td><button class="btn btn-ghost btn-sm" data-gd-edit="${g.id}">編輯</button> <button class="btn btn-danger btn-sm" data-gd-del="${g.id}">刪除</button></td>
+    </tr>`).join('');
+  wrap.innerHTML = `<table><thead><tr><th>支出項名稱</th><th>數量</th><th>總成本</th><th>運費</th><th>關稅</th><th>單位成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.querySelectorAll('[data-gd-edit]').forEach(btn=> btn.addEventListener('click', ()=> editGiftDef(btn.dataset.gdEdit)));
+  wrap.querySelectorAll('[data-gd-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      confirmDialog('刪除支出項', '確定要刪除嗎？若有滿額禮門檻或訂單引用此支出項，成本將以 0 計算。', ()=>{
+        giftDefs = giftDefs.filter(g=>g.id!==btn.dataset.gdDel);
+        saveGiftDefs(); renderGiftDefTable(); renderGiftTierTable();
+        showToast('已刪除支出項');
+      });
+    });
+  });
+}
+const giftDefFieldIds = ['name','batchQty','batchCost','shipping','tariff'];
+function resetGiftDefForm(){
+  editingGiftDefId = null;
+  document.getElementById('gd_id').value='';
+  giftDefFieldIds.forEach(id=> document.getElementById('gd_'+id).value='');
+  document.getElementById('gdSubmitBtn').textContent = '＋ 新增支出項';
+  document.getElementById('gdCancelBtn').style.display='none';
+}
+function editGiftDef(id){
+  const g = giftDefs.find(x=>x.id===id);
+  if(!g) return;
+  editingGiftDefId = id;
+  document.getElementById('gd_id').value = id;
+  giftDefFieldIds.forEach(f=> document.getElementById('gd_'+f).value = g[f] !== undefined ? g[f] : '');
+  document.getElementById('gdSubmitBtn').textContent = '💾 更新支出項';
+  document.getElementById('gdCancelBtn').style.display='inline-flex';
+  document.getElementById('gd_name').scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('gdCancelBtn').addEventListener('click', resetGiftDefForm);
+document.getElementById('giftDefForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const data = {};
+  giftDefFieldIds.forEach(f=> data[f] = document.getElementById('gd_'+f).value);
+  if(!data.name.trim()){ showToast('請填寫支出項名稱'); return; }
+  if(editingGiftDefId){
+    const idx = giftDefs.findIndex(g=>g.id===editingGiftDefId);
+    if(idx>-1) giftDefs[idx] = { ...giftDefs[idx], ...data };
+  }else{
+    data.id = uid('g_');
+    giftDefs.push(data);
+  }
+  if(saveGiftDefs()){
+    showToast(editingGiftDefId ? '已更新支出項' : '已新增支出項');
+    resetGiftDefForm();
+    renderGiftDefTable();
+    renderGiftTierTable();
+  }
+});
+
+/* ---------- Gift Settings: 滿額禮門檻 ---------- */
+function addTierGiftRow(item){
+  item = item || { giftDefId:'', qty:1 };
+  tierGiftRowCount++;
+  const wrap = document.createElement('div');
+  wrap.className = 'dyn-row cols3';
+  wrap.innerHTML = `
+    <div class="field"><label>支出項</label><select class="tg-def">${giftDefOptionsHtml(item.giftDefId)}</select></div>
+    <div class="field"><label>數量</label><input type="number" class="tg-qty" min="0" value="${item.qty}"></div>
+    <button type="button" class="dyn-remove" title="刪除此項">✕</button>`;
+  wrap.querySelector('.dyn-remove').addEventListener('click', ()=> wrap.remove());
+  document.getElementById('tierGiftRows').appendChild(wrap);
+}
+document.getElementById('addTierGiftRow').addEventListener('click', ()=> addTierGiftRow());
+function collectTierGiftItems(){
+  return [...document.querySelectorAll('#tierGiftRows .dyn-row')].map(row=>({
+    giftDefId: row.querySelector('.tg-def').value,
+    qty: row.querySelector('.tg-qty').value,
+  })).filter(it=> it.giftDefId);
+}
+function renderGiftTierTable(){
+  const wrap = document.getElementById('giftTierTableWrap');
+  if(giftTiers.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🏷️</div>還沒有設定滿額禮門檻</div>`; return; }
+  const sorted = [...giftTiers].sort((a,b)=> num(a.threshold)-num(b.threshold));
+  const rows = sorted.map(t=>{
+    const names = (t.items||[]).map(it=>{ const def=getGiftDef(it.giftDefId); return `${def?escapeHtml(def.name):'（已刪除）'}×${it.qty}`; }).join('、') || '—';
+    return `<tr>
+      <td>${fmt(t.threshold)}</td>
+      <td>${escapeHtml(t.label || '')}</td>
+      <td>${names}</td>
+      <td class="num" style="font-weight:700;">${fmt(tierCost(t))}</td>
+      <td><button class="btn btn-ghost btn-sm" data-gt-edit="${t.id}">編輯</button> <button class="btn btn-danger btn-sm" data-gt-del="${t.id}">刪除</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>滿額門檻</th><th>名稱</th><th>支出內容</th><th>支出成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.querySelectorAll('[data-gt-edit]').forEach(btn=> btn.addEventListener('click', ()=> editGiftTier(btn.dataset.gtEdit)));
+  wrap.querySelectorAll('[data-gt-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      confirmDialog('刪除滿額禮門檻', '確定要刪除這個門檻設定嗎？', ()=>{
+        giftTiers = giftTiers.filter(t=>t.id!==btn.dataset.gtDel);
+        saveGiftTiers(); renderGiftTierTable();
+        showToast('已刪除門檻設定');
+      });
+    });
+  });
+}
+function resetGiftTierForm(){
+  editingTierId = null;
+  document.getElementById('gt_id').value='';
+  document.getElementById('gt_threshold').value='';
+  document.getElementById('gt_label').value='';
+  document.getElementById('tierGiftRows').innerHTML='';
+  document.getElementById('gtSubmitBtn').textContent = '＋ 新增門檻';
+  document.getElementById('gtCancelBtn').style.display='none';
+}
+function editGiftTier(id){
+  const t = giftTiers.find(x=>x.id===id);
+  if(!t) return;
+  editingTierId = id;
+  document.getElementById('gt_id').value = id;
+  document.getElementById('gt_threshold').value = t.threshold;
+  document.getElementById('gt_label').value = t.label || '';
+  document.getElementById('tierGiftRows').innerHTML = '';
+  (t.items||[]).forEach(it=> addTierGiftRow(it));
+  document.getElementById('gtSubmitBtn').textContent = '💾 更新門檻';
+  document.getElementById('gtCancelBtn').style.display='inline-flex';
+  document.getElementById('gt_threshold').scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('gtCancelBtn').addEventListener('click', resetGiftTierForm);
+document.getElementById('giftTierForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const data = {
+    threshold: document.getElementById('gt_threshold').value,
+    label: document.getElementById('gt_label').value,
+    items: collectTierGiftItems(),
+  };
+  if(!data.threshold){ showToast('請填寫滿額門檻金額'); return; }
+  if(editingTierId){
+    const idx = giftTiers.findIndex(t=>t.id===editingTierId);
+    if(idx>-1) giftTiers[idx] = { ...giftTiers[idx], ...data };
+  }else{
+    data.id = uid('t_');
+    giftTiers.push(data);
+  }
+  if(saveGiftTiers()){
+    showToast(editingTierId ? '已更新門檻設定' : '已新增門檻設定');
+    resetGiftTierForm();
+    renderGiftTierTable();
+  }
+});
+
+/* ---------- 商品管理 ---------- */
+function resetProductForm(){
+  editingPdId = null;
+  document.getElementById('pd_id').value='';
+  document.getElementById('pd_name').value='';
+  document.getElementById('pd_initialStock').value='';
+  document.getElementById('pdSubmitBtn').textContent = '＋ 新增商品';
+  document.getElementById('pdCancelBtn').style.display='none';
+}
+function editProduct(id){
+  const p = products.find(x=>x.id===id);
+  if(!p) return;
+  editingPdId = id;
+  document.getElementById('pd_id').value = id;
+  document.getElementById('pd_name').value = p.name;
+  document.getElementById('pd_initialStock').value = p.initialStock || '';
+  document.getElementById('pdSubmitBtn').textContent = '💾 更新商品';
+  document.getElementById('pdCancelBtn').style.display='inline-flex';
+  document.getElementById('pd_name').scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('pdCancelBtn').addEventListener('click', resetProductForm);
+document.getElementById('productForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('pd_name').value;
+  const initialStock = document.getElementById('pd_initialStock').value;
+  if(!name.trim()){ showToast('請填寫商品名稱'); return; }
+  if(editingPdId){
+    const idx = products.findIndex(p=>p.id===editingPdId);
+    if(idx>-1) products[idx] = { ...products[idx], name, initialStock };
+  }else{
+    products.push({ id: uid('p_'), name, initialStock });
+  }
+  if(saveProducts()){
+    showToast(editingPdId ? '已更新商品' : '已新增商品');
+    resetProductForm();
+    renderProductTable();
+    renderBuyGiftRuleProductSelect();
+    renderSeriesProductChecks();
+  }
+});
+function renderProductTable(){
+  const wrap = document.getElementById('productTableWrap');
+  if(products.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🛍️</div>還沒有建立任何商品，先在上方新增一個吧</div>`; return; }
+  const rows = products.map(p=>{
+    const stock = currentStock(p.id);
+    return `
+    <tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td class="num">${num(p.initialStock)}</td>
+      <td class="num" style="font-weight:700;${stock<0?'color:var(--danger);':''}">${stock}</td>
+      <td><button class="btn btn-ghost btn-sm" data-pd-edit="${p.id}">編輯</button> <button class="btn btn-danger btn-sm" data-pd-del="${p.id}">刪除</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>商品名稱</th><th>期初庫存</th><th>目前庫存</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.querySelectorAll('[data-pd-edit]').forEach(btn=> btn.addEventListener('click', ()=> editProduct(btn.dataset.pdEdit)));
+  wrap.querySelectorAll('[data-pd-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      confirmDialog('刪除商品', '確定要刪除這個商品嗎？若有訂單、批發系列或買就送規則引用，將顯示為已刪除。', ()=>{
+        products = products.filter(p=>p.id!==btn.dataset.pdDel);
+        saveProducts(); renderProductTable(); renderBuyGiftRuleTable(); renderBuyGiftRuleProductSelect(); renderSeriesTable(); renderSeriesProductChecks();
+        showToast('已刪除商品');
+      });
+    });
+  });
+}
+
+/* ---------- 買就送規則 ---------- */
+function addBgItemRow(item){
+  item = item || { giftDefId:'', qty:1 };
+  bgItemRowCount++;
+  const wrap = document.createElement('div');
+  wrap.className = 'dyn-row cols3';
+  wrap.innerHTML = `
+    <div class="field"><label>支出項</label><select class="bg-def">${giftDefOptionsHtml(item.giftDefId)}</select></div>
+    <div class="field"><label>數量</label><input type="number" class="bg-qty" min="0" value="${item.qty}"></div>
+    <button type="button" class="dyn-remove" title="刪除此項">✕</button>`;
+  wrap.querySelector('.dyn-remove').addEventListener('click', ()=> wrap.remove());
+  document.getElementById('bgItemRows').appendChild(wrap);
+}
+document.getElementById('addBgItemRow').addEventListener('click', ()=> addBgItemRow());
+function collectBgItems(){
+  return [...document.querySelectorAll('#bgItemRows .dyn-row')].map(row=>({
+    giftDefId: row.querySelector('.bg-def').value,
+    qty: row.querySelector('.bg-qty').value,
+  })).filter(it=> it.giftDefId);
+}
+function resetBuyGiftRuleForm(){
+  editingBgId = null;
+  document.getElementById('bg_id').value='';
+  renderBuyGiftRuleProductSelect();
+  document.getElementById('bg_productId').value='';
+  document.getElementById('bg_minQty').value='';
+  document.getElementById('bgItemRows').innerHTML='';
+  document.getElementById('bgSubmitBtn').textContent = '＋ 新增規則';
+  document.getElementById('bgCancelBtn').style.display='none';
+}
+function editBuyGiftRule(id){
+  const r = buyGiftRules.find(x=>x.id===id);
+  if(!r) return;
+  editingBgId = id;
+  document.getElementById('bg_id').value = id;
+  renderBuyGiftRuleProductSelect();
+  document.getElementById('bg_productId').value = r.productId || '';
+  document.getElementById('bg_minQty').value = r.minQty;
+  document.getElementById('bgItemRows').innerHTML = '';
+  (r.items||[]).forEach(it=> addBgItemRow(it));
+  document.getElementById('bgSubmitBtn').textContent = '💾 更新規則';
+  document.getElementById('bgCancelBtn').style.display='inline-flex';
+  document.getElementById('bg_productId').scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('bgCancelBtn').addEventListener('click', resetBuyGiftRuleForm);
+document.getElementById('buyGiftRuleForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const data = {
+    productId: document.getElementById('bg_productId').value,
+    minQty: document.getElementById('bg_minQty').value,
+    items: collectBgItems(),
+  };
+  if(!data.productId){ showToast('請選擇商品'); return; }
+  if(!data.minQty){ showToast('請填寫最低購買數量'); return; }
+  if(editingBgId){
+    const idx = buyGiftRules.findIndex(r=>r.id===editingBgId);
+    if(idx>-1) buyGiftRules[idx] = { ...buyGiftRules[idx], ...data };
+  }else{
+    data.id = uid('bg_');
+    buyGiftRules.push(data);
+  }
+  if(saveBuyGiftRules()){
+    showToast(editingBgId ? '已更新規則' : '已新增規則');
+    resetBuyGiftRuleForm();
+    renderBuyGiftRuleTable();
+  }
+});
+function renderBuyGiftRuleTable(){
+  const wrap = document.getElementById('buyGiftRuleTableWrap');
+  if(buyGiftRules.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🎁</div>還沒有設定買就送規則</div>`; return; }
+  const rows = buyGiftRules.map(r=>{
+    const product = getProduct(r.productId);
+    const names = (r.items||[]).map(it=>{ const def=getGiftDef(it.giftDefId); return `${def?escapeHtml(def.name):'（已刪除）'}×${it.qty}`; }).join('、') || '—';
+    return `<tr>
+      <td>${product?escapeHtml(product.name):'（商品已刪除）'}</td>
+      <td class="num">${num(r.minQty)}</td>
+      <td>${names}</td>
+      <td class="num" style="font-weight:700;">${fmt(productRuleCost(r))}</td>
+      <td><button class="btn btn-ghost btn-sm" data-bg-edit="${r.id}">編輯</button> <button class="btn btn-danger btn-sm" data-bg-del="${r.id}">刪除</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>商品</th><th>最低數量</th><th>贈送內容</th><th>贈品成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.querySelectorAll('[data-bg-edit]').forEach(btn=> btn.addEventListener('click', ()=> editBuyGiftRule(btn.dataset.bgEdit)));
+  wrap.querySelectorAll('[data-bg-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      confirmDialog('刪除買就送規則', '確定要刪除這個規則嗎？', ()=>{
+        buyGiftRules = buyGiftRules.filter(r=>r.id!==btn.dataset.bgDel);
+        saveBuyGiftRules(); renderBuyGiftRuleTable();
+        showToast('已刪除規則');
+      });
+    });
+  });
+}
+
+/* ---------- 批發系列與級距 ---------- */
+function renderSeriesProductChecks(selectedIds){
+  selectedIds = selectedIds || [];
+  const wrap = document.getElementById('seriesProductChecks');
+  if(!wrap) return;
+  if(products.length===0){ wrap.innerHTML = '<span class="hint">尚未建立商品，請先到上方「① 商品管理」新增</span>'; return; }
+  wrap.innerHTML = products.map(p=>`
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--dark);">
+      <input type="checkbox" class="sr-product-check" value="${p.id}" ${selectedIds.includes(p.id)?'checked':''} style="width:16px;height:16px;">
+      ${escapeHtml(p.name)}
+    </label>`).join('');
+}
+function collectSeriesProductIds(){
+  return [...document.querySelectorAll('.sr-product-check:checked')].map(cb=>cb.value);
+}
+function addSeriesTierRow(item){
+  item = item || { minQty:'', maxQty:'', pricePerBox:'' };
+  seriesTierRowCount++;
+  const wrap = document.createElement('div');
+  wrap.className = 'dyn-row';
+  wrap.innerHTML = `
+    <div class="field"><label>最低盒數</label><input type="number" class="st-min" min="0" value="${item.minQty}"></div>
+    <div class="field"><label>最高盒數（留空＝不限）</label><input type="number" class="st-max" min="0" value="${item.maxQty}"></div>
+    <div class="field"><label>每盒價格</label><input type="number" class="st-price" min="0" step="0.01" value="${item.pricePerBox}"></div>
+    <button type="button" class="dyn-remove" title="刪除此項">✕</button>`;
+  wrap.querySelector('.dyn-remove').addEventListener('click', ()=> wrap.remove());
+  document.getElementById('seriesTierRows').appendChild(wrap);
+}
+document.getElementById('addSeriesTierRow').addEventListener('click', ()=> addSeriesTierRow());
+function collectSeriesTiers(){
+  return [...document.querySelectorAll('#seriesTierRows .dyn-row')].map(row=>({
+    minQty: row.querySelector('.st-min').value,
+    maxQty: row.querySelector('.st-max').value,
+    pricePerBox: row.querySelector('.st-price').value,
+  })).filter(t=> t.minQty!=='' && t.pricePerBox!=='');
+}
+function addSeriesPriceTierRow(item){
+  item = item || { qty:'', price:'' };
+  const wrap = document.createElement('div');
+  wrap.className = 'dyn-row cols3';
+  wrap.innerHTML = `
+    <div class="field"><label>合計數量（盒/件）</label><input type="number" class="spt-qty" min="1" value="${item.qty}"></div>
+    <div class="field"><label>總金額</label><input type="number" class="spt-price" min="0" step="0.01" value="${item.price}"></div>
+    <button type="button" class="dyn-remove" title="刪除此項">✕</button>`;
+  wrap.querySelector('.dyn-remove').addEventListener('click', ()=> wrap.remove());
+  document.getElementById('seriesPriceTierRows').appendChild(wrap);
+}
+document.getElementById('addSeriesPriceTierRow').addEventListener('click', ()=> addSeriesPriceTierRow());
+function collectSeriesPriceTiers(){
+  return [...document.querySelectorAll('#seriesPriceTierRows .dyn-row')].map(row=>({
+    qty: row.querySelector('.spt-qty').value,
+    price: row.querySelector('.spt-price').value,
+  })).filter(t=> t.qty!=='' && t.price!=='');
+}
+function resetSeriesForm(){
+  editingSrId = null;
+  document.getElementById('sr_id').value='';
+  document.getElementById('sr_name').value='';
+  renderSeriesProductChecks();
+  document.getElementById('seriesTierRows').innerHTML='';
+  document.getElementById('seriesPriceTierRows').innerHTML='';
+  document.getElementById('srSubmitBtn').textContent = '＋ 新增系列';
+  document.getElementById('srCancelBtn').style.display='none';
+}
+function editSeries(id){
+  const s = productSeries.find(x=>x.id===id);
+  if(!s) return;
+  editingSrId = id;
+  document.getElementById('sr_id').value = id;
+  document.getElementById('sr_name').value = s.name;
+  renderSeriesProductChecks(s.productIds || []);
+  document.getElementById('seriesTierRows').innerHTML = '';
+  (s.tiers||[]).forEach(t=> addSeriesTierRow(t));
+  document.getElementById('seriesPriceTierRows').innerHTML = '';
+  (s.priceTiers||[]).forEach(t=> addSeriesPriceTierRow(t));
+  document.getElementById('srSubmitBtn').textContent = '💾 更新系列';
+  document.getElementById('srCancelBtn').style.display='inline-flex';
+  document.getElementById('sr_name').scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('srCancelBtn').addEventListener('click', resetSeriesForm);
+document.getElementById('seriesForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const data = {
+    name: document.getElementById('sr_name').value,
+    productIds: collectSeriesProductIds(),
+    tiers: collectSeriesTiers(),
+    priceTiers: collectSeriesPriceTiers(),
+  };
+  if(!data.name.trim()){ showToast('請填寫系列名稱'); return; }
+  if(data.productIds.length===0){ showToast('請至少勾選一個商品'); return; }
+  if(editingSrId){
+    const idx = productSeries.findIndex(s=>s.id===editingSrId);
+    if(idx>-1) productSeries[idx] = { ...productSeries[idx], ...data };
+  }else{
+    data.id = uid('sr_');
+    productSeries.push(data);
+  }
+  if(saveProductSeries()){
+    showToast(editingSrId ? '已更新系列' : '已新增系列');
+    resetSeriesForm();
+    renderSeriesTable();
+    renderOrderSeriesSelect();
+  }
+});
+function renderSeriesTable(){
+  const wrap = document.getElementById('seriesTableWrap');
+  if(!wrap) return;
+  if(productSeries.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">📦</div>還沒有建立任何批發系列</div>`; return; }
+  const rows = productSeries.map(s=>{
+    const prodNames = (s.productIds||[]).map(pid=>{ const p=getProduct(pid); return p?escapeHtml(p.name):null; }).filter(Boolean).join('、') || '—';
+    const tierSorted = [...(s.tiers||[])].sort((a,b)=> num(a.minQty)-num(b.minQty));
+    const tierText = tierSorted.map(t=> `${tierLabel(t)}:${fmt(t.pricePerBox)}`).join('、') || '—';
+    const priceTierSorted = [...(s.priceTiers||[])].sort((a,b)=> num(a.qty)-num(b.qty));
+    const priceTierText = priceTierSorted.map(t=> `${num(t.qty)}件:${fmt(t.price)}`).join('、') || '—';
+    return `<tr>
+      <td>${escapeHtml(s.name)}</td>
+      <td>${prodNames}</td>
+      <td>${tierText}</td>
+      <td>${priceTierText}</td>
+      <td><button class="btn btn-ghost btn-sm" data-sr-edit="${s.id}">編輯</button> <button class="btn btn-danger btn-sm" data-sr-del="${s.id}">刪除</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>系列名稱</th><th>包含商品</th><th>批發級距</th><th>優惠價格</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.querySelectorAll('[data-sr-edit]').forEach(btn=> btn.addEventListener('click', ()=> editSeries(btn.dataset.srEdit)));
+  wrap.querySelectorAll('[data-sr-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      confirmDialog('刪除批發系列', '確定要刪除這個系列嗎？使用此系列的舊訂單資料仍會保留，但無法再判斷批發級距。', ()=>{
+        productSeries = productSeries.filter(s=>s.id!==btn.dataset.srDel);
+        saveProductSeries(); renderSeriesTable(); renderOrderSeriesSelect();
+        showToast('已刪除系列');
+      });
+    });
+  });
+}
+
+/* ---------- 進貨紀錄 (獨立於訂單) ---------- */
+function addPbItemRow(item){
+  item = item || { productId:'', cost:'', qty:'' };
+  pbItemRowCount++;
+  const wrap = document.createElement('div');
+  wrap.className = 'dyn-row';
+  wrap.innerHTML = `
+    <div class="field"><label>商品</label><select class="pb-product">${productOptionsHtml(item.productId)}</select></div>
+    <div class="field"><label>進貨成本（單價）</label><input type="number" class="pb-cost" min="0" step="0.01" value="${item.cost}"></div>
+    <div class="field"><label>進貨數量</label><input type="number" class="pb-qty" min="0" value="${item.qty}"></div>
+    <button type="button" class="dyn-remove" title="刪除此項">✕</button>`;
+  wrap.querySelector('.dyn-remove').addEventListener('click', ()=> wrap.remove());
+  document.getElementById('pbItemRows').appendChild(wrap);
+}
+document.getElementById('addPbItemRow').addEventListener('click', ()=> addPbItemRow());
+document.getElementById('pbQuickAddSeriesBtn').addEventListener('click', function(){
+  const seriesId = document.getElementById('pb_quickSeries').value;
+  const series = getSeries(seriesId);
+  if(!series){ showToast('請先選擇批發系列'); return; }
+  const existingIds = [...document.querySelectorAll('#pbItemRows .pb-product')].map(sel=>sel.value);
+  (series.productIds||[]).forEach(pid=>{
+    if(!existingIds.includes(pid)) addPbItemRow({ productId: pid, cost:'', qty:'' });
+  });
+});
+function collectPbItems(){
+  return [...document.querySelectorAll('#pbItemRows .dyn-row')].map(row=>({
+    productId: row.querySelector('.pb-product').value,
+    cost: row.querySelector('.pb-cost').value,
+    qty: row.querySelector('.pb-qty').value,
+  })).filter(it=> it.productId || num(it.cost) || num(it.qty));
+}
+function pbTotal(b){
+  return (b.items||[]).reduce((s,it)=> s + num(it.cost)*num(it.qty), 0) + num(b.shipping);
+}
+function avgUnitCostForProduct(productId){
+  if(!productId) return 0;
+  let totalCost=0, totalQty=0;
+  purchaseBatches.forEach(b=>{
+    (b.items||[]).forEach(it=>{
+      if(it.productId===productId){
+        totalCost += num(it.cost)*num(it.qty);
+        totalQty += num(it.qty);
+      }
+    });
+  });
+  return totalQty>0 ? totalCost/totalQty : 0;
+}
+function resetPurchaseBatchForm(){
+  editingPbId = null;
+  document.getElementById('pb_id').value='';
+  renderPbQuickSeriesSelect();
+  document.getElementById('pb_quickSeries').value='';
+  document.getElementById('pbItemRows').innerHTML='';
+  document.getElementById('pb_shipping').value='';
+  document.getElementById('pb_date').value='';
+  document.getElementById('pb_note').value='';
+  document.getElementById('pbSubmitBtn').textContent = '＋ 新增進貨紀錄';
+  document.getElementById('pbCancelBtn').style.display='none';
+  addPbItemRow();
+}
+function editPurchaseBatch(id){
+  const b = purchaseBatches.find(x=>x.id===id);
+  if(!b) return;
+  editingPbId = id;
+  document.getElementById('pb_id').value = id;
+  renderPbQuickSeriesSelect();
+  document.getElementById('pb_quickSeries').value='';
+  document.getElementById('pbItemRows').innerHTML='';
+  (b.items&&b.items.length? b.items : [{}]).forEach(it=> addPbItemRow(it));
+  document.getElementById('pb_shipping').value = b.shipping || '';
+  document.getElementById('pb_date').value = b.date || '';
+  document.getElementById('pb_note').value = b.note || '';
+  document.getElementById('pbSubmitBtn').textContent = '💾 更新進貨紀錄';
+  document.getElementById('pbCancelBtn').style.display='inline-flex';
+  document.getElementById('pb_date').scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('pbCancelBtn').addEventListener('click', resetPurchaseBatchForm);
+document.getElementById('purchaseBatchForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const data = { items: collectPbItems(), shipping: document.getElementById('pb_shipping').value, date: document.getElementById('pb_date').value, note: document.getElementById('pb_note').value };
+  if(editingPbId){
+    const idx = purchaseBatches.findIndex(b=>b.id===editingPbId);
+    if(idx>-1) purchaseBatches[idx] = { ...purchaseBatches[idx], ...data };
+  }else{
+    data.id = uid('pb_');
+    purchaseBatches.push(data);
+  }
+  if(savePurchaseBatches()){
+    showToast(editingPbId ? '已更新進貨紀錄' : '已新增進貨紀錄');
+    resetPurchaseBatchForm();
+    renderPurchaseBatchTable();
+  }
+});
+function renderPurchaseBatchTable(){
+  const wrap = document.getElementById('purchaseBatchTableWrap');
+  if(purchaseBatches.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">📦</div>還沒有任何進貨紀錄</div>`; return; }
+  const sorted = [...purchaseBatches].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  const rows = sorted.map(b=>{
+    const names = (b.items||[]).map(it=>{ const p=getProduct(it.productId); return `${p?escapeHtml(p.name):'（商品已刪除／未指定）'}×${num(it.qty)}`; }).join('、') || '—';
+    return `<tr>
+      <td>${b.date||'—'}</td>
+      <td>${names}</td>
+      <td class="num" style="font-weight:700;">${fmt(pbTotal(b))}</td>
+      <td>${escapeHtml(b.note||'')}</td>
+      <td><button class="btn btn-ghost btn-sm" data-pb-edit="${b.id}">編輯</button> <button class="btn btn-danger btn-sm" data-pb-del="${b.id}">刪除</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>日期</th><th>進貨品項</th><th>總成本（含運費）</th><th>備註</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.querySelectorAll('[data-pb-edit]').forEach(btn=> btn.addEventListener('click', ()=> editPurchaseBatch(btn.dataset.pbEdit)));
+  wrap.querySelectorAll('[data-pb-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      confirmDialog('刪除進貨紀錄', '確定要刪除這筆進貨紀錄嗎？此動作無法復原。', ()=>{
+        purchaseBatches = purchaseBatches.filter(b=>b.id!==btn.dataset.pbDel);
+        savePurchaseBatches(); renderPurchaseBatchTable();
+        showToast('已刪除進貨紀錄');
+      });
+    });
+  });
+}
+
+/* ---------- 商品/批發報表 ---------- */
+function renderProductSalesReport(){
+  const wrap = document.getElementById('productSalesReportWrap');
+  if(products.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🛍️</div>還沒有建立任何商品</div>`; return; }
+  const rows = products.map(p=>{
+    let soldQty = 0;
+    orders.forEach(o=>{
+      if((o.orderMode||'retail')==='wholesale'){
+        (o.wholesaleItems||[]).forEach(it=>{ if(it.productId===p.id) soldQty += num(it.qty); });
+      }else if(o.retailItems && o.retailItems.length){
+        o.retailItems.forEach(it=>{ if(it.productId===p.id) soldQty += num(it.qty); });
+      }else{
+        if(o.productId===p.id) soldQty += num(o.productQty);
+      }
+    });
+    const stock = currentStock(p.id);
+    return `<tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td class="num">${soldQty}</td>
+      <td class="num" style="${stock<0?'color:var(--danger);font-weight:700;':'font-weight:700;'}">${stock}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>商品名稱</th><th>累計銷售數量</th><th>目前庫存</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderSeriesReport(){
+  const wrap = document.getElementById('seriesReportWrap');
+  if(productSeries.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">📦</div>還沒有建立任何批發系列</div>`; return; }
+  const rows = productSeries.map(s=>{
+    const relatedOrders = orders.filter(o=> (o.orderMode||'retail')==='wholesale' && o.seriesId===s.id);
+    let totalBoxes=0, revenue=0, cost=0, profit=0;
+    const tierCounts = {};
+    relatedOrders.forEach(o=>{
+      const c = calcOrder(o);
+      totalBoxes += c.wholesaleTotalBoxes;
+      revenue += c.revenueTotal;
+      cost += c.costTotal;
+      profit += c.profitTotal;
+      if(c.wholesaleTier){
+        const label = tierLabel(c.wholesaleTier);
+        tierCounts[label] = (tierCounts[label]||0) + 1;
+      }
+    });
+    const tierText = Object.entries(tierCounts).map(([k,v])=> `${k} × ${v}筆`).join('、') || '—';
+    return `<tr>
+      <td>${escapeHtml(s.name)}</td>
+      <td class="num">${relatedOrders.length}</td>
+      <td>${tierText}</td>
+      <td class="num">${totalBoxes}</td>
+      <td class="num">${fmt(revenue)}</td>
+      <td class="num">${fmt(cost)}</td>
+      <td class="num ${profit>=0?'profit-pos':'profit-neg'}">${fmt(profit)}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>系列名稱</th><th>訂單數</th><th>級距分布</th><th>總盒數</th><th>總營收</th><th>總成本</th><th>總淨利</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------- Daily / Monthly / Yearly summaries ---------- */
+function aggregate(keyFn){
+  const map = {};
+  orders.forEach(o=>{
+    const k = keyFn(o.orderDate);
+    if(!k) return;
+    if(!map[k]) map[k] = { key:k, count:0, revenue:0, cost:0, profit:0 };
+    const c = calcOrder(o);
+    map[k].count++; map[k].revenue += c.revenueTotal; map[k].cost += c.costTotal; map[k].profit += c.profitTotal;
+  });
+  return Object.values(map).sort((a,b)=> b.key.localeCompare(a.key));
+}
+function buildSummaryTable(rows, keyLabel){
+  if(rows.length===0) return `<div class="empty-state"><div class="emoji">🗂️</div>目前還沒有資料可以結算</div>`;
+  const trs = rows.map(r=>`<tr><td>${r.key}</td><td class="num">${r.count}</td><td class="num">${fmt(r.revenue)}</td><td class="num">${fmt(r.cost)}</td><td class="num ${r.profit>=0?'profit-pos':'profit-neg'}">${fmt(r.profit)}</td></tr>`).join('');
+  return `<table><thead><tr><th>${keyLabel}</th><th>訂單數</th><th>營收</th><th>成本</th><th>淨利</th></tr></thead><tbody>${trs}</tbody></table>`;
+}
+function renderDaily(){ document.getElementById('dailyTableWrap').innerHTML = buildSummaryTable(aggregate(d=>d||''), '日期'); }
+function renderMonthly(){
+  const rows = aggregate(monthKey);
+  document.getElementById('monthlyTableWrap').innerHTML = buildSummaryTable(rows, '月份');
+  const maxProfit = Math.max(1, ...rows.map(r=>Math.abs(r.profit)));
+  const barsHtml = rows.slice(0,12).map(r=>{
+    const pct = Math.min(100, Math.abs(r.profit)/maxProfit*100);
+    return `<div class="bar-row"><div class="bar-label">${r.key}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${r.profit>=0?'var(--sage)':'var(--danger)'}"></div></div><div class="bar-val">${fmt(r.profit)}</div></div>`;
+  }).join('');
+  document.getElementById('monthlyBars').innerHTML = rows.length ? barsHtml : `<div class="empty-state">尚無月結算資料</div>`;
+}
+function renderYearly(){ document.getElementById('yearlyTableWrap').innerHTML = buildSummaryTable(aggregate(yearKey), '年度'); }
+
+/* ---------- Backup ---------- */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries }, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `微商記帳備份_${todayStr()}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('已匯出備份檔');
+});
+document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const parsed = JSON.parse(evt.target.result);
+      const incomingOrders = Array.isArray(parsed) ? parsed : (parsed.orders||[]);
+      const incomingDefs = parsed.giftDefs || [];
+      const incomingTiers = parsed.giftTiers || [];
+      const incomingPb = parsed.purchaseBatches || [];
+      const incomingAb = parsed.agentBatches || [];
+      const incomingProducts = parsed.products || [];
+      const incomingRules = parsed.buyGiftRules || [];
+      const incomingSeries = parsed.productSeries || [];
+      confirmDialog('匯入備份', `即將匯入 ${incomingOrders.length} 筆訂單、${incomingDefs.length} 個支出項、${incomingProducts.length} 個商品、${incomingSeries.length} 個批發系列，並覆蓋目前所有資料，確定要繼續嗎？`, ()=>{
+        orders = incomingOrders; giftDefs = incomingDefs; giftTiers = incomingTiers;
+        purchaseBatches = incomingPb; agentBatches = incomingAb;
+        products = incomingProducts; buyGiftRules = incomingRules; productSeries = incomingSeries;
+        saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches();
+        saveProducts(); saveBuyGiftRules(); saveProductSeries();
+        renderDashboard(); renderList();
+        showToast('匯入完成');
+        goTo('dashboard');
+      });
+    }catch(err){ showToast('匯入失敗，檔案格式不正確'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+document.getElementById('clearAllBtn').addEventListener('click', ()=>{
+  confirmDialog('清空所有資料', '確定要刪除所有訂單、商品、批發系列與支出項設定嗎？建議先匯出備份，此動作無法復原。', ()=>{
+    orders = []; giftDefs = []; giftTiers = []; purchaseBatches = []; agentBatches = []; products = []; buyGiftRules = []; productSeries = [];
+    saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches(); saveProducts(); saveBuyGiftRules(); saveProductSeries();
+    renderDashboard(); renderList();
+    showToast('已清空所有資料');
+  });
+});
+
+
+/* ---------- Init ---------- */
+loadAll();
+resetForm();
+resetGiftDefForm();
+resetGiftTierForm();
+resetPurchaseBatchForm();
+resetProductForm();
+resetBuyGiftRuleForm();
+resetSeriesForm();
+goTo('dashboard');
+checkIntro();
+
+})();
+</script>
+</body>
+</html>
