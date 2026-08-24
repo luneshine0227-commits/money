@@ -2,17 +2,8 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>微商記帳工具｜進貨成本 × 利潤 × 滿額贈品</title>
-<meta name="application-name" content="微商記帳">
-<meta name="apple-mobile-web-app-title" content="微商記帳">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#FAF3EE">
-<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
-<link rel="manifest" href="./manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -93,7 +84,7 @@ th,td{padding:12px 14px;text-align:left;font-size:13.5px;white-space:nowrap;}
 th{color:var(--gray);font-weight:700;font-size:12px;border-bottom:1px solid #EFEBE6;background:var(--cream);position:sticky;top:0;}
 tbody tr{border-bottom:1px solid #F3F0EA;}
 tbody tr:hover{background:var(--light-pink);}
-td.num{text-align:right;font-variant-numeric:tabular-nums;}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
 .profit-pos{color:#5C7A5E;font-weight:700;}
 .profit-neg{color:var(--danger);font-weight:700;}
 .empty-state{padding:60px 20px;text-align:center;color:var(--gray);}
@@ -133,6 +124,9 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;}
 .form-actions{display:flex;gap:10px;margin-top:22px;position:sticky;bottom:0;background:linear-gradient(to top, var(--bg) 70%, transparent);padding:14px 0 4px;}
 
 .summary-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.date-pill{border:1px solid #E5E0D8;background:#fff;border-radius:20px;padding:8px 16px;font-size:12.5px;font-weight:700;color:var(--medium);}
+.date-pill:hover{background:var(--cream);}
+.date-pill.active{background:var(--sage);border-color:var(--sage);color:#fff;}
 .bar-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F3F0EA;}
 .bar-label{width:110px;flex-shrink:0;font-size:12.5px;color:var(--medium);font-weight:700;}
 .bar-track{flex:1;height:10px;background:var(--light-sage);border-radius:6px;overflow:hidden;}
@@ -545,10 +539,27 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;}
 
     <!-- 商品/批發報表 -->
     <section class="page" id="page-productReport">
-      <div class="page-header"><div><h2>商品/批發報表</h2><div class="page-sub">累計銷售數量、目前庫存，以及批發系列統計</div></div></div>
+      <div class="page-header"><div><h2>商品/批發報表</h2><div class="page-sub">依選定期間統計銷售數量與批發成績；目前庫存不受期間篩選影響</div></div></div>
+
+      <div class="filter-bar" style="margin-bottom:8px;">
+        <button class="date-pill" data-range="today">今天</button>
+        <button class="date-pill" data-range="yesterday">昨天</button>
+        <button class="date-pill" data-range="7d">7天</button>
+        <button class="date-pill" data-range="30d">30天</button>
+        <button class="date-pill" data-range="thisMonth">本月</button>
+        <button class="date-pill" data-range="lastMonth">上個月</button>
+        <button class="date-pill active" data-range="all">全部</button>
+      </div>
+      <div class="filter-bar" style="margin-bottom:16px;">
+        <input type="date" id="reportFilterStart">
+        <span style="color:var(--gray);font-size:13px;">至</span>
+        <input type="date" id="reportFilterEnd">
+        <span class="hint" id="reportRangeLabel" style="font-size:12.5px;color:var(--gray);">目前顯示：全部期間</span>
+      </div>
+
       <div class="section-title">① 商品銷售統計</div>
       <div class="table-wrap" id="productSalesReportWrap" style="margin-bottom:30px;"></div>
-      <div class="section-title">② 批發系列統計</div>
+      <div class="section-title">② 批發系列統計 <span class="tag">含系列內商品的零售＋批發銷售</span></div>
       <div class="table-wrap" id="seriesReportWrap"></div>
     </section>
 
@@ -1049,7 +1060,7 @@ function buildTable(list, showActions){
       ${showActions? `<td><button class="btn btn-ghost btn-sm" data-edit="${o.id}">編輯</button> <button class="btn btn-danger btn-sm" data-del="${o.id}">刪除</button></td>`:''}
     </tr>`;
   }).join('');
-  return `<table><thead><tr><th>日期</th><th>售出產品</th><th>數量</th><th>訂單金額</th><th>成本</th><th>利潤</th>${showActions?'<th>操作</th>':''}</tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><thead><tr><th>日期</th><th>售出產品</th><th class="num">數量</th><th class="num">訂單金額</th><th class="num">成本</th><th class="num">利潤</th>${showActions?'<th>操作</th>':''}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 function bindRowActions(containerId){
   const c = document.getElementById(containerId);
@@ -1411,7 +1422,7 @@ function renderGiftDefTable(){
       <td class="num" style="font-weight:700;">${fmt(unitCost(g))}</td>
       <td><button class="btn btn-ghost btn-sm" data-gd-edit="${g.id}">編輯</button> <button class="btn btn-danger btn-sm" data-gd-del="${g.id}">刪除</button></td>
     </tr>`).join('');
-  wrap.innerHTML = `<table><thead><tr><th>支出項名稱</th><th>數量</th><th>總成本</th><th>運費</th><th>關稅</th><th>單位成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th>支出項名稱</th><th class="num">數量</th><th class="num">總成本</th><th class="num">運費</th><th class="num">關稅</th><th class="num">單位成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   wrap.querySelectorAll('[data-gd-edit]').forEach(btn=> btn.addEventListener('click', ()=> editGiftDef(btn.dataset.gdEdit)));
   wrap.querySelectorAll('[data-gd-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1489,14 +1500,14 @@ function renderGiftTierTable(){
   const rows = sorted.map(t=>{
     const names = (t.items||[]).map(it=>{ const def=getGiftDef(it.giftDefId); return `${def?escapeHtml(def.name):'（已刪除）'}×${it.qty}`; }).join('、') || '—';
     return `<tr>
-      <td>${fmt(t.threshold)}</td>
+      <td class="num">${fmt(t.threshold)}</td>
       <td>${escapeHtml(t.label || '')}</td>
       <td>${names}</td>
       <td class="num" style="font-weight:700;">${fmt(tierCost(t))}</td>
       <td><button class="btn btn-ghost btn-sm" data-gt-edit="${t.id}">編輯</button> <button class="btn btn-danger btn-sm" data-gt-del="${t.id}">刪除</button></td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>滿額門檻</th><th>名稱</th><th>支出內容</th><th>支出成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th class="num">滿額門檻</th><th>名稱</th><th>支出內容</th><th class="num">支出成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   wrap.querySelectorAll('[data-gt-edit]').forEach(btn=> btn.addEventListener('click', ()=> editGiftTier(btn.dataset.gtEdit)));
   wrap.querySelectorAll('[data-gt-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1606,7 +1617,7 @@ function renderProductTable(){
       <td><button class="btn btn-ghost btn-sm" data-pd-edit="${p.id}">編輯</button> <button class="btn btn-danger btn-sm" data-pd-del="${p.id}">刪除</button></td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>商品名稱</th><th>期初庫存</th><th>目前庫存</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th>商品名稱</th><th class="num">期初庫存</th><th class="num">目前庫存</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   wrap.querySelectorAll('[data-pd-edit]').forEach(btn=> btn.addEventListener('click', ()=> editProduct(btn.dataset.pdEdit)));
   wrap.querySelectorAll('[data-pd-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1700,7 +1711,7 @@ function renderBuyGiftRuleTable(){
       <td><button class="btn btn-ghost btn-sm" data-bg-edit="${r.id}">編輯</button> <button class="btn btn-danger btn-sm" data-bg-del="${r.id}">刪除</button></td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>商品</th><th>最低數量</th><th>贈送內容</th><th>贈品成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th>商品</th><th class="num">最低數量</th><th>贈送內容</th><th class="num">贈品成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   wrap.querySelectorAll('[data-bg-edit]').forEach(btn=> btn.addEventListener('click', ()=> editBuyGiftRule(btn.dataset.bgEdit)));
   wrap.querySelectorAll('[data-bg-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1955,7 +1966,7 @@ function renderPurchaseBatchTable(){
       <td><button class="btn btn-ghost btn-sm" data-pb-edit="${b.id}">編輯</button> <button class="btn btn-danger btn-sm" data-pb-del="${b.id}">刪除</button></td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>日期</th><th>進貨品項</th><th>總成本（含運費）</th><th>備註</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th>日期</th><th>進貨品項</th><th class="num">總成本（含運費）</th><th>備註</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   wrap.querySelectorAll('[data-pb-edit]').forEach(btn=> btn.addEventListener('click', ()=> editPurchaseBatch(btn.dataset.pbEdit)));
   wrap.querySelectorAll('[data-pb-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1968,6 +1979,65 @@ function renderPurchaseBatchTable(){
   });
 }
 
+/* ---------- 商品/批發報表：日期區間篩選 ---------- */
+let reportRangeStart = '';
+let reportRangeEnd = '';
+function pad2(n){ return n<10 ? '0'+n : ''+n; }
+function toDateStr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function addDays(dateStr, delta){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+delta);
+  return toDateStr(d);
+}
+function inReportRange(dateStr){
+  if(!reportRangeStart && !reportRangeEnd) return true;
+  if(!dateStr) return false;
+  if(reportRangeStart && dateStr < reportRangeStart) return false;
+  if(reportRangeEnd && dateStr > reportRangeEnd) return false;
+  return true;
+}
+function updateReportRangeLabel(){
+  const label = document.getElementById('reportRangeLabel');
+  if(!reportRangeStart && !reportRangeEnd){ label.textContent = '目前顯示：全部期間'; return; }
+  label.textContent = `目前顯示：${reportRangeStart || '最早'} ～ ${reportRangeEnd || '最新'}`;
+}
+function setReportRange(rangeKey){
+  const today = todayStr();
+  let start='', end='';
+  if(rangeKey==='today'){ start=end=today; }
+  else if(rangeKey==='yesterday'){ start=end=addDays(today,-1); }
+  else if(rangeKey==='7d'){ start=addDays(today,-6); end=today; }
+  else if(rangeKey==='30d'){ start=addDays(today,-29); end=today; }
+  else if(rangeKey==='thisMonth'){ start=today.slice(0,8)+'01'; end=today; }
+  else if(rangeKey==='lastMonth'){
+    const d = new Date(today+'T00:00:00');
+    d.setDate(1); d.setDate(0);
+    end = toDateStr(d);
+    start = end.slice(0,8)+'01';
+  }
+  reportRangeStart = start;
+  reportRangeEnd = end;
+  document.getElementById('reportFilterStart').value = start;
+  document.getElementById('reportFilterEnd').value = end;
+  document.querySelectorAll('.date-pill').forEach(b=> b.classList.toggle('active', b.dataset.range===rangeKey));
+  updateReportRangeLabel();
+  renderProductSalesReport();
+  renderSeriesReport();
+}
+document.querySelectorAll('.date-pill').forEach(btn=>{
+  btn.addEventListener('click', ()=> setReportRange(btn.dataset.range));
+});
+function applyCustomReportRange(){
+  reportRangeStart = document.getElementById('reportFilterStart').value;
+  reportRangeEnd = document.getElementById('reportFilterEnd').value;
+  document.querySelectorAll('.date-pill').forEach(b=> b.classList.remove('active'));
+  updateReportRangeLabel();
+  renderProductSalesReport();
+  renderSeriesReport();
+}
+document.getElementById('reportFilterStart').addEventListener('change', applyCustomReportRange);
+document.getElementById('reportFilterEnd').addEventListener('change', applyCustomReportRange);
+
 /* ---------- 商品/批發報表 ---------- */
 function renderProductSalesReport(){
   const wrap = document.getElementById('productSalesReportWrap');
@@ -1975,6 +2045,7 @@ function renderProductSalesReport(){
   const rows = products.map(p=>{
     let soldQty = 0;
     orders.forEach(o=>{
+      if(!inReportRange(o.orderDate)) return;
       if((o.orderMode||'retail')==='wholesale'){
         (o.wholesaleItems||[]).forEach(it=>{ if(it.productId===p.id) soldQty += num(it.qty); });
       }else if(o.retailItems && o.retailItems.length){
@@ -1990,38 +2061,44 @@ function renderProductSalesReport(){
       <td class="num" style="${stock<0?'color:var(--danger);font-weight:700;':'font-weight:700;'}">${stock}</td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>商品名稱</th><th>累計銷售數量</th><th>目前庫存</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th>商品名稱</th><th class="num">期間銷售數量</th><th class="num">目前庫存</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function renderSeriesReport(){
   const wrap = document.getElementById('seriesReportWrap');
   if(productSeries.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">📦</div>還沒有建立任何批發系列</div>`; return; }
   const rows = productSeries.map(s=>{
-    const relatedOrders = orders.filter(o=> (o.orderMode||'retail')==='wholesale' && o.seriesId===s.id);
-    let totalBoxes=0, revenue=0, cost=0, profit=0;
-    const tierCounts = {};
-    relatedOrders.forEach(o=>{
+    const seriesProductIds = new Set(s.productIds||[]);
+    let totalQty=0, orderCount=0;
+
+    // 批發混批訂單：整筆訂單都算這個系列的
+    const wholesaleOrders = orders.filter(o=> (o.orderMode||'retail')==='wholesale' && o.seriesId===s.id && inReportRange(o.orderDate));
+    wholesaleOrders.forEach(o=>{
       const c = calcOrder(o);
-      totalBoxes += c.wholesaleTotalBoxes;
-      revenue += c.revenueTotal;
-      cost += c.costTotal;
-      profit += c.profitTotal;
-      if(c.wholesaleTier){
-        const label = tierLabel(c.wholesaleTier);
-        tierCounts[label] = (tierCounts[label]||0) + 1;
-      }
+      totalQty += c.wholesaleTotalBoxes;
+      orderCount++;
     });
-    const tierText = Object.entries(tierCounts).map(([k,v])=> `${k} × ${v}筆`).join('、') || '—';
+
+    // 零售訂單：只算品項裡屬於這個系列商品的數量
+    orders.forEach(o=>{
+      if((o.orderMode||'retail')==='wholesale') return;
+      if(!inReportRange(o.orderDate)) return;
+      const items = (o.retailItems && o.retailItems.length) ? o.retailItems
+        : (o.productId ? [{ productId:o.productId, qty:o.productQty, amount:'' }] : []);
+      const seriesItems = items.filter(it=> seriesProductIds.has(it.productId));
+      if(seriesItems.length===0) return;
+      orderCount++;
+      seriesItems.forEach(it=>{ totalQty += num(it.qty); });
+    });
+
+    const totalStock = (s.productIds||[]).reduce((sum,pid)=> sum + currentStock(pid), 0);
     return `<tr>
       <td>${escapeHtml(s.name)}</td>
-      <td class="num">${relatedOrders.length}</td>
-      <td>${tierText}</td>
-      <td class="num">${totalBoxes}</td>
-      <td class="num">${fmt(revenue)}</td>
-      <td class="num">${fmt(cost)}</td>
-      <td class="num ${profit>=0?'profit-pos':'profit-neg'}">${fmt(profit)}</td>
+      <td class="num">${orderCount}</td>
+      <td class="num">${totalQty}</td>
+      <td class="num" style="${totalStock<0?'color:var(--danger);font-weight:700;':'font-weight:700;'}">${totalStock}</td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>系列名稱</th><th>訂單數</th><th>級距分布</th><th>總盒數</th><th>總營收</th><th>總成本</th><th>總淨利</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th>系列名稱</th><th class="num">訂單數</th><th class="num">總數量</th><th class="num">總庫存</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 /* ---------- Daily / Monthly / Yearly summaries ---------- */
@@ -2039,7 +2116,7 @@ function aggregate(keyFn){
 function buildSummaryTable(rows, keyLabel){
   if(rows.length===0) return `<div class="empty-state"><div class="emoji">🗂️</div>目前還沒有資料可以結算</div>`;
   const trs = rows.map(r=>`<tr><td>${r.key}</td><td class="num">${r.count}</td><td class="num">${fmt(r.revenue)}</td><td class="num">${fmt(r.cost)}</td><td class="num ${r.profit>=0?'profit-pos':'profit-neg'}">${fmt(r.profit)}</td></tr>`).join('');
-  return `<table><thead><tr><th>${keyLabel}</th><th>訂單數</th><th>營收</th><th>成本</th><th>淨利</th></tr></thead><tbody>${trs}</tbody></table>`;
+  return `<table><thead><tr><th>${keyLabel}</th><th class="num">訂單數</th><th class="num">營收</th><th class="num">成本</th><th class="num">淨利</th></tr></thead><tbody>${trs}</tbody></table>`;
 }
 function renderDaily(){ document.getElementById('dailyTableWrap').innerHTML = buildSummaryTable(aggregate(d=>d||''), '日期'); }
 function renderMonthly(){
