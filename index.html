@@ -399,10 +399,12 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
           <input type="hidden" id="pb_id">
           <div class="field">
             <label>快速帶入系列商品（選填）</label>
-            <div style="display:flex;gap:8px;">
-              <select id="pb_quickSeries" style="flex:1;"></select>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <select id="pb_quickSeries" style="flex:1;min-width:140px;"></select>
+              <input type="number" id="pb_quickUnitCost" min="0" step="0.01" placeholder="統一單價（選填）" style="width:150px;">
               <button type="button" class="btn btn-secondary btn-sm" id="pbQuickAddSeriesBtn" style="flex:none;">帶入品項</button>
             </div>
+            <span class="hint">系列內每個商品進貨單價都一樣的話，填這裡一次帶入，不用一個一個打</span>
           </div>
           <div class="form-card-head" style="margin-top:14px;"><h3 style="font-size:13px;">進貨品項</h3></div>
           <div id="pbItemRows"></div>
@@ -491,7 +493,14 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
         <form id="buyGiftRuleForm">
           <input type="hidden" id="bg_id">
           <div class="form-grid">
-            <div class="field"><label>指定商品</label><select id="bg_productId"></select></div>
+            <div class="field"><label>適用對象</label>
+              <select id="bg_targetType">
+                <option value="product">單一商品</option>
+                <option value="series">整個系列（合計數量）</option>
+              </select>
+            </div>
+            <div class="field" id="bg_productField"><label>指定商品</label><select id="bg_productId"></select></div>
+            <div class="field" id="bg_seriesField" style="display:none;"><label>指定系列</label><select id="bg_seriesId"></select></div>
             <div class="field"><label>最低購買數量</label><input type="number" id="bg_minQty" min="1" placeholder="例：1" required></div>
           </div>
           <div style="margin-top:14px;">
@@ -801,6 +810,13 @@ function renderBuyGiftRuleProductSelect(){
   sel.innerHTML = productOptionsHtml();
   sel.value = cur;
 }
+function renderBuyGiftRuleSeriesSelect(){
+  const sel = document.getElementById('bg_seriesId');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = seriesOptionsHtml();
+  sel.value = cur;
+}
 
 /* ---------- Product Series (批發) helpers ---------- */
 function getSeries(id){ return productSeries.find(s=>s.id===id); }
@@ -878,7 +894,12 @@ function tierCost(tier){
 }
 function findMatchedProductRule(productId, qty){
   if(!productId || num(qty)<=0 || buyGiftRules.length===0) return null;
-  const eligible = buyGiftRules.filter(r=> r.productId===productId && num(qty) >= num(r.minQty)).sort((a,b)=> num(b.minQty)-num(a.minQty));
+  const eligible = buyGiftRules.filter(r=> (r.targetType||'product')==='product' && r.productId===productId && num(qty) >= num(r.minQty)).sort((a,b)=> num(b.minQty)-num(a.minQty));
+  return eligible[0] || null;
+}
+function findMatchedSeriesGiftRule(seriesId, qty){
+  if(!seriesId || num(qty)<=0 || buyGiftRules.length===0) return null;
+  const eligible = buyGiftRules.filter(r=> r.targetType==='series' && r.seriesId===seriesId && num(qty) >= num(r.minQty)).sort((a,b)=> num(b.minQty)-num(a.minQty));
   return eligible[0] || null;
 }
 function productRuleCost(rule){
@@ -902,6 +923,16 @@ function calcOrder(o){
   retailItems.forEach(it=>{
     const rule = findMatchedProductRule(it.productId, it.qty);
     if(rule){ matchedProductRules.push({ rule, productId: it.productId }); matchedProductRuleCost += productRuleCost(rule); }
+  });
+  // 依系列合計數量比對「整個系列」買就送規則
+  const seriesQtyMapForRules = {};
+  retailItems.forEach(it=>{
+    const s = getProductSeries(it.productId);
+    if(s){ seriesQtyMapForRules[s.id] = (seriesQtyMapForRules[s.id]||0) + num(it.qty); }
+  });
+  Object.keys(seriesQtyMapForRules).forEach(sid=>{
+    const rule = findMatchedSeriesGiftRule(sid, seriesQtyMapForRules[sid]);
+    if(rule){ matchedProductRules.push({ rule, seriesId: sid }); matchedProductRuleCost += productRuleCost(rule); }
   });
 
   // 批發混批
@@ -953,7 +984,7 @@ function goTo(page, opts){
   if(page==='dashboard') renderDashboard();
   if(page==='list') renderList();
   if(page==='stockLedger'){ renderPurchaseBatchTable(); renderPbQuickSeriesSelect(); }
-  if(page==='productSettings'){ renderProductTable(); renderBuyGiftRuleTable(); renderBuyGiftRuleProductSelect(); renderSeriesTable(); }
+  if(page==='productSettings'){ renderProductTable(); renderBuyGiftRuleTable(); renderBuyGiftRuleProductSelect(); renderBuyGiftRuleSeriesSelect(); renderSeriesTable(); }
   if(page==='giftSettings'){ renderGiftDefTable(); renderGiftTierTable(); }
   if(page==='productReport'){ renderProductSalesReport(); renderSeriesReport(); }
   if(page==='backup') renderStorageUsage();
@@ -1369,12 +1400,12 @@ function updateCalc(){
     }
     if(c.matchedProductRules && c.matchedProductRules.length){
       c.matchedProductRules.forEach(m=>{
-        const p = getProduct(m.productId);
+        const label = m.seriesId ? (getSeries(m.seriesId)?getSeries(m.seriesId).name:'系列') : (getProduct(m.productId)?getProduct(m.productId).name:'商品');
         const giftNames = (m.rule.items||[]).map(it=>{
           const def = getGiftDef(it.giftDefId);
           return `${def?escapeHtml(def.name):'（支出項已刪除）'} ×${it.qty}`;
         }).join('、');
-        lines.push(`🛍️ 買就送（${p?escapeHtml(p.name):'商品'}）：${giftNames || '（尚未設定支出項）'}｜成本 <b>${fmt(productRuleCost(m.rule))}</b>`);
+        lines.push(`🛍️ 買就送（${escapeHtml(label)}）：${giftNames || '（尚未設定支出項）'}｜成本 <b>${fmt(productRuleCost(m.rule))}</b>`);
       });
     }
   }
@@ -1650,11 +1681,22 @@ function collectBgItems(){
     qty: row.querySelector('.bg-qty').value,
   })).filter(it=> it.giftDefId);
 }
+function applyBgTargetTypeUI(type){
+  document.getElementById('bg_productField').style.display = type==='series' ? 'none' : '';
+  document.getElementById('bg_seriesField').style.display = type==='series' ? '' : 'none';
+}
+document.getElementById('bg_targetType').addEventListener('change', function(){
+  applyBgTargetTypeUI(this.value);
+});
 function resetBuyGiftRuleForm(){
   editingBgId = null;
   document.getElementById('bg_id').value='';
+  document.getElementById('bg_targetType').value='product';
+  applyBgTargetTypeUI('product');
   renderBuyGiftRuleProductSelect();
   document.getElementById('bg_productId').value='';
+  renderBuyGiftRuleSeriesSelect();
+  document.getElementById('bg_seriesId').value='';
   document.getElementById('bg_minQty').value='';
   document.getElementById('bgItemRows').innerHTML='';
   document.getElementById('bgSubmitBtn').textContent = '＋ 新增規則';
@@ -1665,24 +1707,33 @@ function editBuyGiftRule(id){
   if(!r) return;
   editingBgId = id;
   document.getElementById('bg_id').value = id;
+  const targetType = r.targetType || 'product';
+  document.getElementById('bg_targetType').value = targetType;
+  applyBgTargetTypeUI(targetType);
   renderBuyGiftRuleProductSelect();
   document.getElementById('bg_productId').value = r.productId || '';
+  renderBuyGiftRuleSeriesSelect();
+  document.getElementById('bg_seriesId').value = r.seriesId || '';
   document.getElementById('bg_minQty').value = r.minQty;
   document.getElementById('bgItemRows').innerHTML = '';
   (r.items||[]).forEach(it=> addBgItemRow(it));
   document.getElementById('bgSubmitBtn').textContent = '💾 更新規則';
   document.getElementById('bgCancelBtn').style.display='inline-flex';
-  document.getElementById('bg_productId').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('bg_targetType').scrollIntoView({behavior:'smooth', block:'center'});
 }
 document.getElementById('bgCancelBtn').addEventListener('click', resetBuyGiftRuleForm);
 document.getElementById('buyGiftRuleForm').addEventListener('submit', function(e){
   e.preventDefault();
+  const targetType = document.getElementById('bg_targetType').value;
   const data = {
-    productId: document.getElementById('bg_productId').value,
+    targetType,
+    productId: targetType==='product' ? document.getElementById('bg_productId').value : '',
+    seriesId: targetType==='series' ? document.getElementById('bg_seriesId').value : '',
     minQty: document.getElementById('bg_minQty').value,
     items: collectBgItems(),
   };
-  if(!data.productId){ showToast('請選擇商品'); return; }
+  if(targetType==='product' && !data.productId){ showToast('請選擇商品'); return; }
+  if(targetType==='series' && !data.seriesId){ showToast('請選擇系列'); return; }
   if(!data.minQty){ showToast('請填寫最低購買數量'); return; }
   if(editingBgId){
     const idx = buyGiftRules.findIndex(r=>r.id===editingBgId);
@@ -1701,17 +1752,25 @@ function renderBuyGiftRuleTable(){
   const wrap = document.getElementById('buyGiftRuleTableWrap');
   if(buyGiftRules.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🎁</div>還沒有設定買就送規則</div>`; return; }
   const rows = buyGiftRules.map(r=>{
-    const product = getProduct(r.productId);
+    const isSeries = (r.targetType||'product')==='series';
+    let targetLabel;
+    if(isSeries){
+      const series = getSeries(r.seriesId);
+      targetLabel = (series?escapeHtml(series.name):'（系列已刪除）') + '（整系列）';
+    }else{
+      const product = getProduct(r.productId);
+      targetLabel = product?escapeHtml(product.name):'（商品已刪除）';
+    }
     const names = (r.items||[]).map(it=>{ const def=getGiftDef(it.giftDefId); return `${def?escapeHtml(def.name):'（已刪除）'}×${it.qty}`; }).join('、') || '—';
     return `<tr>
-      <td>${product?escapeHtml(product.name):'（商品已刪除）'}</td>
+      <td>${targetLabel}</td>
       <td class="num">${num(r.minQty)}</td>
       <td>${names}</td>
       <td class="num" style="font-weight:700;">${fmt(productRuleCost(r))}</td>
       <td><button class="btn btn-ghost btn-sm" data-bg-edit="${r.id}">編輯</button> <button class="btn btn-danger btn-sm" data-bg-del="${r.id}">刪除</button></td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>商品</th><th class="num">最低數量</th><th>贈送內容</th><th class="num">贈品成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th>適用對象</th><th class="num">最低數量</th><th>贈送內容</th><th class="num">贈品成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   wrap.querySelectorAll('[data-bg-edit]').forEach(btn=> btn.addEventListener('click', ()=> editBuyGiftRule(btn.dataset.bgEdit)));
   wrap.querySelectorAll('[data-bg-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1878,9 +1937,10 @@ document.getElementById('pbQuickAddSeriesBtn').addEventListener('click', functio
   const seriesId = document.getElementById('pb_quickSeries').value;
   const series = getSeries(seriesId);
   if(!series){ showToast('請先選擇批發系列'); return; }
+  const unitCostVal = document.getElementById('pb_quickUnitCost').value;
   const existingIds = [...document.querySelectorAll('#pbItemRows .pb-product')].map(sel=>sel.value);
   (series.productIds||[]).forEach(pid=>{
-    if(!existingIds.includes(pid)) addPbItemRow({ productId: pid, cost:'', qty:'' });
+    if(!existingIds.includes(pid)) addPbItemRow({ productId: pid, cost: unitCostVal, qty:'' });
   });
 });
 function collectPbItems(){
@@ -1911,6 +1971,7 @@ function resetPurchaseBatchForm(){
   document.getElementById('pb_id').value='';
   renderPbQuickSeriesSelect();
   document.getElementById('pb_quickSeries').value='';
+  document.getElementById('pb_quickUnitCost').value='';
   document.getElementById('pbItemRows').innerHTML='';
   document.getElementById('pb_shipping').value='';
   document.getElementById('pb_date').value='';
@@ -1926,6 +1987,7 @@ function editPurchaseBatch(id){
   document.getElementById('pb_id').value = id;
   renderPbQuickSeriesSelect();
   document.getElementById('pb_quickSeries').value='';
+  document.getElementById('pb_quickUnitCost').value='';
   document.getElementById('pbItemRows').innerHTML='';
   (b.items&&b.items.length? b.items : [{}]).forEach(it=> addPbItemRow(it));
   document.getElementById('pb_shipping').value = b.shipping || '';
