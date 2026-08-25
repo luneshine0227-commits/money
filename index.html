@@ -127,6 +127,9 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
 .date-pill{border:1px solid #E5E0D8;background:#fff;border-radius:20px;padding:8px 16px;font-size:12.5px;font-weight:700;color:var(--medium);}
 .date-pill:hover{background:var(--cream);}
 .date-pill.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+.agent-date-pill{border:1px solid #E5E0D8;background:#fff;border-radius:20px;padding:8px 16px;font-size:12.5px;font-weight:700;color:var(--medium);}
+.agent-date-pill:hover{background:var(--cream);}
+.agent-date-pill.active{background:var(--sage);border-color:var(--sage);color:#fff;}
 .bar-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F3F0EA;}
 .bar-label{width:110px;flex-shrink:0;font-size:12.5px;color:var(--medium);font-weight:700;}
 .bar-track{flex:1;height:10px;background:var(--light-sage);border-radius:6px;overflow:hidden;}
@@ -179,6 +182,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
     <button class="nav-item" data-page="productSettings"><span class="nav-icon">🛍️</span><span>商品設定</span></button>
     <button class="nav-item" data-page="giftSettings"><span class="nav-icon">🧾</span><span>支出項設定</span></button>
     <button class="nav-item" data-page="productReport"><span class="nav-icon">📈</span><span>商品報表</span></button>
+    <button class="nav-item" data-page="agentReport"><span class="nav-icon">🤝</span><span>代理報表</span></button>
     <button class="nav-item" data-page="daily"><span class="nav-icon">📅</span><span>日結算</span></button>
     <button class="nav-item" data-page="monthly"><span class="nav-icon">🗓️</span><span>月結算</span></button>
     <button class="nav-item" data-page="yearly"><span class="nav-icon">📆</span><span>年結算</span></button>
@@ -326,12 +330,10 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
         </div>
 
         <div class="card form-card">
-          <div class="form-card-head"><h3>🤝 代理補貨資訊</h3></div>
+          <div class="form-card-head"><h3>🤝 代理（選填）</h3></div>
+          <div class="subtle-box">如果這筆訂單是代理跟你補貨（叫貨），選這筆是哪位代理就好，數量跟金額直接用上面零售／批發填的就可以，不用重複填。</div>
           <div class="form-grid">
-            <div class="field"><label>代理名稱</label><input type="text" id="f_agentName" placeholder="例：A代理"></div>
-            <div class="field"><label>代理補貨數量</label><input type="number" id="f_agentQty" min="0" placeholder="0"></div>
-            <div class="field"><label>代理補貨金額</label><input type="number" id="f_agentAmount" min="0" step="0.01" placeholder="0"></div>
-            <div class="field"><label>代理補貨日期</label><input type="date" id="f_agentDate"></div>
+            <div class="field"><label>指定代理</label><select id="f_agentId"></select></div>
           </div>
         </div>
 
@@ -562,6 +564,21 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
         </form>
       </div>
       <div class="table-wrap" id="seriesTableWrap"></div>
+
+      <div class="section-title">④ 代理管理</div>
+      <div class="card form-card">
+        <form id="agentForm">
+          <input type="hidden" id="ag_id">
+          <div class="form-grid">
+            <div class="field"><label>代理名稱</label><input type="text" id="ag_name" placeholder="例：A代理" required></div>
+          </div>
+          <div class="form-actions" style="position:static;background:none;padding-top:14px;">
+            <button type="submit" class="btn btn-primary btn-sm" id="agSubmitBtn">＋ 新增代理</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="agCancelBtn" style="display:none;">取消編輯</button>
+          </div>
+        </form>
+      </div>
+      <div class="table-wrap" id="agentTableWrap"></div>
     </section>
 
     <!-- 商品/批發報表 -->
@@ -590,6 +607,34 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
       <div class="table-wrap" id="seriesReportWrap"></div>
     </section>
 
+
+    <!-- 代理報表 -->
+    <section class="page" id="page-agentReport">
+      <div class="page-header"><div><h2>代理報表</h2><div class="page-sub">依選定期間統計代理叫貨狀況；不指定代理時顯示所有代理的總表</div></div></div>
+
+      <div class="filter-bar" style="margin-bottom:8px;">
+        <button class="agent-date-pill" data-range="today">今天</button>
+        <button class="agent-date-pill" data-range="yesterday">昨天</button>
+        <button class="agent-date-pill" data-range="7d">7天</button>
+        <button class="agent-date-pill" data-range="30d">30天</button>
+        <button class="agent-date-pill" data-range="thisMonth">本月</button>
+        <button class="agent-date-pill" data-range="lastMonth">上個月</button>
+        <button class="agent-date-pill active" data-range="all">全部</button>
+      </div>
+      <div class="filter-bar" style="margin-bottom:16px;">
+        <input type="date" id="agentReportFilterStart">
+        <span style="color:var(--gray);font-size:13px;">至</span>
+        <input type="date" id="agentReportFilterEnd">
+        <span class="hint" id="agentReportRangeLabel" style="font-size:12.5px;color:var(--gray);">目前顯示：全部期間</span>
+      </div>
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <select id="agentReportSelect" style="min-width:160px;">
+          <option value="">全部代理（總表）</option>
+        </select>
+      </div>
+
+      <div id="agentReportContent"></div>
+    </section>
 
     <!-- 日結算 -->
     <section class="page" id="page-daily">
@@ -674,6 +719,7 @@ const PRODUCTS_KEY = "microbiz_products_v1";
 const BUYGIFTRULES_KEY = "microbiz_buygiftrules_v1";
 const PRODUCT_SERIES_KEY = "microbiz_productseries_v1";
 const OPENING_BALANCE_KEY = "microbiz_opening_balance_v1";
+const AGENTS_KEY = "microbiz_agents_v1";
 const INTRO_SEEN_KEY = "microbiz_intro_seen_v1";
 
 let orders = [];
@@ -685,6 +731,8 @@ let products = [];
 let buyGiftRules = [];
 let productSeries = [];
 let openingBalance = { amount:'', date:'', note:'' };
+let agents = [];
+let editingAgId = null;
 let editingId = null;
 let editingGiftDefId = null;
 let editingTierId = null;
@@ -718,6 +766,7 @@ function loadAll(){
   try{ buyGiftRules = JSON.parse(localStorage.getItem(BUYGIFTRULES_KEY) || '[]'); }catch(e){ buyGiftRules = []; }
   try{ productSeries = JSON.parse(localStorage.getItem(PRODUCT_SERIES_KEY) || '[]'); }catch(e){ productSeries = []; }
   try{ openingBalance = JSON.parse(localStorage.getItem(OPENING_BALANCE_KEY) || 'null') || { amount:'', date:'', note:'' }; }catch(e){ openingBalance = { amount:'', date:'', note:'' }; }
+  try{ agents = JSON.parse(localStorage.getItem(AGENTS_KEY) || '[]'); }catch(e){ agents = []; }
 }
 function safeSetItem(key, value){
   try{
@@ -737,6 +786,7 @@ function saveProducts(){ return safeSetItem(PRODUCTS_KEY, JSON.stringify(product
 function saveBuyGiftRules(){ return safeSetItem(BUYGIFTRULES_KEY, JSON.stringify(buyGiftRules)); }
 function saveProductSeries(){ return safeSetItem(PRODUCT_SERIES_KEY, JSON.stringify(productSeries)); }
 function saveOpeningBalance(){ return safeSetItem(OPENING_BALANCE_KEY, JSON.stringify(openingBalance)); }
+function saveAgents(){ return safeSetItem(AGENTS_KEY, JSON.stringify(agents)); }
 
 /* ---------- Storage usage ---------- */
 const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
@@ -874,6 +924,20 @@ function renderOrderSeriesSelect(){
   if(!sel) return;
   const cur = sel.value;
   sel.innerHTML = seriesOptionsHtml();
+  sel.value = cur;
+}
+function getAgent(id){ return agents.find(a=>a.id===id); }
+function agentOptionsHtml(selectedId){
+  if(agents.length===0) return '<option value="">尚未建立代理，請先到「商品設定」新增</option>';
+  return '<option value="">不指定代理</option>' + agents.map(a=>
+    `<option value="${a.id}" ${a.id===selectedId?'selected':''}>${escapeHtml(a.name)}</option>`
+  ).join('');
+}
+function renderOrderAgentSelect(){
+  const sel = document.getElementById('f_agentId');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = agentOptionsHtml();
   sel.value = cur;
 }
 function renderRetailQuickSeriesSelect(){
@@ -1019,7 +1083,7 @@ function calcOrder(o){
 }
 
 /* ---------- Navigation ---------- */
-const pages = ['dashboard','list','form','stockLedger','productSettings','giftSettings','productReport','daily','monthly','yearly','backup','guide'];
+const pages = ['dashboard','list','form','stockLedger','productSettings','giftSettings','productReport','agentReport','daily','monthly','yearly','backup','guide'];
 function goTo(page, opts){
   opts = opts || {};
   pages.forEach(p=> document.getElementById('page-'+p).classList.toggle('active', p===page));
@@ -1027,9 +1091,10 @@ function goTo(page, opts){
   if(page==='dashboard') renderDashboard();
   if(page==='list') renderList();
   if(page==='stockLedger'){ renderPurchaseBatchTable(); renderPbQuickSeriesSelect(); }
-  if(page==='productSettings'){ renderProductTable(); renderBuyGiftRuleTable(); renderBuyGiftRuleProductSelect(); renderBuyGiftRuleSeriesSelect(); renderSeriesTable(); }
+  if(page==='productSettings'){ renderProductTable(); renderBuyGiftRuleTable(); renderBuyGiftRuleProductSelect(); renderBuyGiftRuleSeriesSelect(); renderSeriesTable(); renderAgentTable(); }
   if(page==='giftSettings'){ renderGiftDefTable(); renderGiftTierTable(); }
   if(page==='productReport'){ renderProductSalesReport(); renderSeriesReport(); }
+  if(page==='agentReport'){ renderAgentReportSelect(); renderAgentReport(); }
   if(page==='backup') renderStorageUsage();
   if(page==='daily') renderDaily();
   if(page==='monthly') renderMonthly();
@@ -1282,8 +1347,7 @@ document.getElementById('f_seriesId').addEventListener('change', function(){
 });
 
 const formFieldIds = [
-  'orderDate','orderMode','seriesId',
-  'agentName','agentQty','agentAmount','agentDate',
+  'orderDate','orderMode','seriesId','agentId',
   'freeShipping',
   'websiteAmount','websiteCost','shopeeAmount','shopeeFee','shoplineAmount','meetupAmount',
   'costOverride','wholesaleAmountOverride','giftCostOverride',
@@ -1303,6 +1367,8 @@ function resetForm(){
   addRetailItemRow();
   renderOrderSeriesSelect();
   document.getElementById('f_seriesId').value = '';
+  renderOrderAgentSelect();
+  document.getElementById('f_agentId').value = '';
   document.getElementById('wholesaleItemRows').innerHTML = '';
   document.getElementById('f_noGift').checked = false;
   document.getElementById('customGiftRows').innerHTML = '';
@@ -1333,6 +1399,8 @@ function editOrder(id){
   if(retailItems.length){ retailItems.forEach(it=> addRetailItemRow(it)); } else { addRetailItemRow(); }
   renderOrderSeriesSelect();
   document.getElementById('f_seriesId').value = o.seriesId || '';
+  renderOrderAgentSelect();
+  document.getElementById('f_agentId').value = o.agentId || '';
   const qtyMap = {};
   (o.wholesaleItems||[]).forEach(it=> qtyMap[it.productId] = it.qty);
   renderWholesaleItemRows(o.seriesId || '', qtyMap);
@@ -1993,6 +2061,64 @@ function renderSeriesTable(){
   });
 }
 
+/* ---------- 代理管理 ---------- */
+function resetAgentForm(){
+  editingAgId = null;
+  document.getElementById('ag_id').value='';
+  document.getElementById('ag_name').value='';
+  document.getElementById('agSubmitBtn').textContent = '＋ 新增代理';
+  document.getElementById('agCancelBtn').style.display='none';
+}
+function editAgent(id){
+  const a = agents.find(x=>x.id===id);
+  if(!a) return;
+  editingAgId = id;
+  document.getElementById('ag_id').value = id;
+  document.getElementById('ag_name').value = a.name;
+  document.getElementById('agSubmitBtn').textContent = '💾 更新代理';
+  document.getElementById('agCancelBtn').style.display='inline-flex';
+  document.getElementById('ag_name').scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('agCancelBtn').addEventListener('click', resetAgentForm);
+document.getElementById('agentForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('ag_name').value;
+  if(!name.trim()){ showToast('請填寫代理名稱'); return; }
+  if(editingAgId){
+    const idx = agents.findIndex(a=>a.id===editingAgId);
+    if(idx>-1) agents[idx] = { ...agents[idx], name };
+  }else{
+    agents.push({ id: uid('ag_'), name });
+  }
+  if(saveAgents()){
+    showToast(editingAgId ? '已更新代理' : '已新增代理');
+    resetAgentForm();
+    renderAgentTable();
+    renderOrderAgentSelect();
+    renderAgentReportSelect();
+  }
+});
+function renderAgentTable(){
+  const wrap = document.getElementById('agentTableWrap');
+  if(agents.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🤝</div>還沒有建立任何代理</div>`; return; }
+  const rows = agents.map(a=>`
+    <tr>
+      <td>${escapeHtml(a.name)}</td>
+      <td><button class="btn btn-ghost btn-sm" data-ag-edit="${a.id}">編輯</button> <button class="btn btn-danger btn-sm" data-ag-del="${a.id}">刪除</button></td>
+    </tr>`).join('');
+  wrap.innerHTML = `<table><thead><tr><th>代理名稱</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.querySelectorAll('[data-ag-edit]').forEach(btn=> btn.addEventListener('click', ()=> editAgent(btn.dataset.agEdit)));
+  wrap.querySelectorAll('[data-ag-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      confirmDialog('刪除代理', '確定要刪除這個代理嗎？之前指定這個代理的訂單資料仍會保留，但會顯示為未指定代理。', ()=>{
+        agents = agents.filter(a=>a.id!==btn.dataset.agDel);
+        saveAgents(); renderAgentTable(); renderOrderAgentSelect(); renderAgentReportSelect();
+        showToast('已刪除代理');
+      });
+    });
+  });
+}
+
 /* ---------- 進貨紀錄 (獨立於訂單) ---------- */
 function addPbItemRow(item){
   item = item || { productId:'', cost:'', qty:'' };
@@ -2131,19 +2257,7 @@ function addDays(dateStr, delta){
   d.setDate(d.getDate()+delta);
   return toDateStr(d);
 }
-function inReportRange(dateStr){
-  if(!reportRangeStart && !reportRangeEnd) return true;
-  if(!dateStr) return false;
-  if(reportRangeStart && dateStr < reportRangeStart) return false;
-  if(reportRangeEnd && dateStr > reportRangeEnd) return false;
-  return true;
-}
-function updateReportRangeLabel(){
-  const label = document.getElementById('reportRangeLabel');
-  if(!reportRangeStart && !reportRangeEnd){ label.textContent = '目前顯示：全部期間'; return; }
-  label.textContent = `目前顯示：${reportRangeStart || '最早'} ～ ${reportRangeEnd || '最新'}`;
-}
-function setReportRange(rangeKey){
+function computeQuickRange(rangeKey){
   const today = todayStr();
   let start='', end='';
   if(rangeKey==='today'){ start=end=today; }
@@ -2157,6 +2271,23 @@ function setReportRange(rangeKey){
     end = toDateStr(d);
     start = end.slice(0,8)+'01';
   }
+  return { start, end };
+}
+function dateInRange(dateStr, start, end){
+  if(!start && !end) return true;
+  if(!dateStr) return false;
+  if(start && dateStr < start) return false;
+  if(end && dateStr > end) return false;
+  return true;
+}
+function inReportRange(dateStr){ return dateInRange(dateStr, reportRangeStart, reportRangeEnd); }
+function updateReportRangeLabel(){
+  const label = document.getElementById('reportRangeLabel');
+  if(!reportRangeStart && !reportRangeEnd){ label.textContent = '目前顯示：全部期間'; return; }
+  label.textContent = `目前顯示：${reportRangeStart || '最早'} ～ ${reportRangeEnd || '最新'}`;
+}
+function setReportRange(rangeKey){
+  const { start, end } = computeQuickRange(rangeKey);
   reportRangeStart = start;
   reportRangeEnd = end;
   document.getElementById('reportFilterStart').value = start;
@@ -2179,6 +2310,39 @@ function applyCustomReportRange(){
 }
 document.getElementById('reportFilterStart').addEventListener('change', applyCustomReportRange);
 document.getElementById('reportFilterEnd').addEventListener('change', applyCustomReportRange);
+
+/* ---------- 代理報表：日期區間篩選 ---------- */
+let agentReportRangeStart = '';
+let agentReportRangeEnd = '';
+function inAgentReportRange(dateStr){ return dateInRange(dateStr, agentReportRangeStart, agentReportRangeEnd); }
+function updateAgentReportRangeLabel(){
+  const label = document.getElementById('agentReportRangeLabel');
+  if(!agentReportRangeStart && !agentReportRangeEnd){ label.textContent = '目前顯示：全部期間'; return; }
+  label.textContent = `目前顯示：${agentReportRangeStart || '最早'} ～ ${agentReportRangeEnd || '最新'}`;
+}
+function setAgentReportRange(rangeKey){
+  const { start, end } = computeQuickRange(rangeKey);
+  agentReportRangeStart = start;
+  agentReportRangeEnd = end;
+  document.getElementById('agentReportFilterStart').value = start;
+  document.getElementById('agentReportFilterEnd').value = end;
+  document.querySelectorAll('.agent-date-pill').forEach(b=> b.classList.toggle('active', b.dataset.range===rangeKey));
+  updateAgentReportRangeLabel();
+  renderAgentReport();
+}
+document.querySelectorAll('.agent-date-pill').forEach(btn=>{
+  btn.addEventListener('click', ()=> setAgentReportRange(btn.dataset.range));
+});
+function applyCustomAgentReportRange(){
+  agentReportRangeStart = document.getElementById('agentReportFilterStart').value;
+  agentReportRangeEnd = document.getElementById('agentReportFilterEnd').value;
+  document.querySelectorAll('.agent-date-pill').forEach(b=> b.classList.remove('active'));
+  updateAgentReportRangeLabel();
+  renderAgentReport();
+}
+document.getElementById('agentReportFilterStart').addEventListener('change', applyCustomAgentReportRange);
+document.getElementById('agentReportFilterEnd').addEventListener('change', applyCustomAgentReportRange);
+document.getElementById('agentReportSelect').addEventListener('change', renderAgentReport);
 
 /* ---------- 商品/批發報表 ---------- */
 function renderProductSalesReport(){
@@ -2243,6 +2407,113 @@ function renderSeriesReport(){
   wrap.innerHTML = `<table><thead><tr><th>系列名稱</th><th class="num">訂單數</th><th class="num">總數量</th><th class="num">總庫存</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
+/* ---------- 代理報表 ---------- */
+function renderAgentReportSelect(){
+  const sel = document.getElementById('agentReportSelect');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部代理（總表）</option>' + agents.map(a=>
+    `<option value="${a.id}">${escapeHtml(a.name)}</option>`
+  ).join('');
+  sel.value = cur;
+}
+function orderTotalQty(o, c){
+  return c.mode==='wholesale' ? c.wholesaleTotalBoxes : (c.retailItems||[]).reduce((s,it)=> s+num(it.qty), 0);
+}
+function renderAgentReport(){
+  const content = document.getElementById('agentReportContent');
+  const selectedAgentId = document.getElementById('agentReportSelect').value;
+
+  if(!selectedAgentId){
+    if(agents.length===0){ content.innerHTML = `<div class="empty-state"><div class="emoji">🤝</div>還沒有建立任何代理，先到「🛍️ 商品設定 → ④ 代理管理」新增</div>`; return; }
+    const rows = agents.map(a=>{
+      const agentOrders = orders.filter(o=> o.agentId===a.id && inAgentReportRange(o.orderDate));
+      let qty=0, amount=0;
+      agentOrders.forEach(o=>{
+        const c = calcOrder(o);
+        qty += orderTotalQty(o, c);
+        amount += c.revenueTotal;
+      });
+      return `<tr>
+        <td>${escapeHtml(a.name)}</td>
+        <td class="num">${agentOrders.length}</td>
+        <td class="num">${qty}</td>
+        <td class="num">${fmt(amount)}</td>
+      </tr>`;
+    }).join('');
+    content.innerHTML = `<div class="table-wrap"><table><thead><tr><th>代理名稱</th><th class="num">訂單數</th><th class="num">叫貨量</th><th class="num">叫貨金額</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    return;
+  }
+
+  const agent = getAgent(selectedAgentId);
+  const agentOrders = orders.filter(o=> o.agentId===selectedAgentId && inAgentReportRange(o.orderDate))
+    .sort((a,b)=> (b.orderDate||'').localeCompare(a.orderDate||''));
+
+  if(agentOrders.length===0){
+    content.innerHTML = `<div class="empty-state"><div class="emoji">🤝</div>${agent?escapeHtml(agent.name):''}在這段期間沒有叫貨紀錄</div>`;
+    return;
+  }
+
+  let totalQty=0, totalAmount=0;
+  const orderRows = agentOrders.map(o=>{
+    const c = calcOrder(o);
+    const qty = orderTotalQty(o, c);
+    totalQty += qty; totalAmount += c.revenueTotal;
+    return `<tr>
+      <td>${o.orderDate||'—'}</td>
+      <td>${c.mode==='wholesale'?'批發':'零售'}</td>
+      <td class="num">${qty}</td>
+      <td class="num">${fmt(c.revenueTotal)}</td>
+    </tr>`;
+  }).join('');
+
+  const productQtyMap = {};
+  agentOrders.forEach(o=>{
+    const c = calcOrder(o);
+    if(c.mode==='wholesale'){
+      (o.wholesaleItems||[]).forEach(it=>{ productQtyMap[it.productId] = (productQtyMap[it.productId]||0) + num(it.qty); });
+    }else{
+      (c.retailItems||[]).forEach(it=>{ productQtyMap[it.productId] = (productQtyMap[it.productId]||0) + num(it.qty); });
+    }
+  });
+  const productRows = Object.keys(productQtyMap).map(pid=>{
+    const p = getProduct(pid);
+    return `<tr><td>${p?escapeHtml(p.name):'（商品已刪除）'}</td><td class="num">${productQtyMap[pid]}</td></tr>`;
+  }).join('') || '<tr><td colspan="2" style="text-align:center;color:var(--gray);">無資料</td></tr>';
+
+  const seriesRowsData = [];
+  productSeries.forEach(s=>{
+    const seriesProductIds = new Set(s.productIds||[]);
+    let sQty=0, sCount=0;
+    agentOrders.forEach(o=>{
+      const c = calcOrder(o);
+      if(c.mode==='wholesale' && o.seriesId===s.id){
+        sQty += c.wholesaleTotalBoxes; sCount++;
+      }else if(c.mode!=='wholesale'){
+        const seriesItems = (c.retailItems||[]).filter(it=> seriesProductIds.has(it.productId));
+        if(seriesItems.length){ sCount++; seriesItems.forEach(it=> sQty+=num(it.qty)); }
+      }
+    });
+    if(sCount>0){ seriesRowsData.push({ name:s.name, count:sCount, qty:sQty }); }
+  });
+  const seriesRows = seriesRowsData.map(r=> `<tr><td>${escapeHtml(r.name)}</td><td class="num">${r.count}</td><td class="num">${r.qty}</td></tr>`).join('')
+    || '<tr><td colspan="3" style="text-align:center;color:var(--gray);">無資料</td></tr>';
+
+  content.innerHTML = `
+    <div class="grid-cards" style="margin-bottom:20px;">
+      <div class="stat-card"><div class="stat-label">訂單數</div><div class="stat-value">${agentOrders.length} 筆</div></div>
+      <div class="stat-card blue"><div class="stat-label">叫貨量</div><div class="stat-value">${totalQty}</div></div>
+      <div class="stat-card pink"><div class="stat-label">叫貨金額</div><div class="stat-value">${fmt(totalAmount)}</div></div>
+    </div>
+    <div class="section-title">叫貨明細</div>
+    <div class="table-wrap" style="margin-bottom:24px;"><table><thead><tr><th>日期</th><th>模式</th><th class="num">數量</th><th class="num">金額</th></tr></thead><tbody>${orderRows}</tbody></table></div>
+    <div class="section-title">商品明細</div>
+    <div class="table-wrap" style="margin-bottom:24px;"><table><thead><tr><th>商品名稱</th><th class="num">數量</th></tr></thead><tbody>${productRows}</tbody></table></div>
+    <div class="section-title">系列統計</div>
+    <div class="table-wrap"><table><thead><tr><th>系列名稱</th><th class="num">訂單數</th><th class="num">總數量</th></tr></thead><tbody>${seriesRows}</tbody></table></div>
+  `;
+}
+
 /* ---------- Daily / Monthly / Yearly summaries ---------- */
 function aggregate(keyFn){
   const map = {};
@@ -2275,7 +2546,7 @@ function renderYearly(){ document.getElementById('yearlyTableWrap').innerHTML = 
 
 /* ---------- Backup ---------- */
 document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries, openingBalance }, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries, openingBalance, agents }, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `微商記帳備份_${todayStr()}.json`;
@@ -2300,13 +2571,14 @@ document.getElementById('importFile').addEventListener('change', function(e){
       const incomingRules = parsed.buyGiftRules || [];
       const incomingSeries = parsed.productSeries || [];
       const incomingOb = parsed.openingBalance || { amount:'', date:'', note:'' };
-      confirmDialog('匯入備份', `即將匯入 ${incomingOrders.length} 筆訂單、${incomingDefs.length} 個支出項、${incomingProducts.length} 個商品、${incomingSeries.length} 個批發系列，並覆蓋目前所有資料，確定要繼續嗎？`, ()=>{
+      const incomingAgents = parsed.agents || [];
+      confirmDialog('匯入備份', `即將匯入 ${incomingOrders.length} 筆訂單、${incomingDefs.length} 個支出項、${incomingProducts.length} 個商品、${incomingSeries.length} 個批發系列、${incomingAgents.length} 個代理，並覆蓋目前所有資料，確定要繼續嗎？`, ()=>{
         orders = incomingOrders; giftDefs = incomingDefs; giftTiers = incomingTiers;
         purchaseBatches = incomingPb; agentBatches = incomingAb;
         products = incomingProducts; buyGiftRules = incomingRules; productSeries = incomingSeries;
-        openingBalance = incomingOb;
+        openingBalance = incomingOb; agents = incomingAgents;
         saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches();
-        saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance();
+        saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance(); saveAgents();
         renderDashboard(); renderList();
         showToast('匯入完成');
         goTo('dashboard');
@@ -2317,10 +2589,10 @@ document.getElementById('importFile').addEventListener('change', function(e){
   reader.readAsText(file);
 });
 document.getElementById('clearAllBtn').addEventListener('click', ()=>{
-  confirmDialog('清空所有資料', '確定要刪除所有訂單、商品、批發系列、支出項設定與期初盈餘嗎？建議先匯出備份，此動作無法復原。', ()=>{
+  confirmDialog('清空所有資料', '確定要刪除所有訂單、商品、批發系列、支出項設定、期初盈餘與代理嗎？建議先匯出備份，此動作無法復原。', ()=>{
     orders = []; giftDefs = []; giftTiers = []; purchaseBatches = []; agentBatches = []; products = []; buyGiftRules = []; productSeries = [];
-    openingBalance = { amount:'', date:'', note:'' };
-    saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches(); saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance();
+    openingBalance = { amount:'', date:'', note:'' }; agents = [];
+    saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches(); saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance(); saveAgents();
     renderDashboard(); renderList();
     showToast('已清空所有資料');
   });
@@ -2336,6 +2608,7 @@ resetPurchaseBatchForm();
 resetProductForm();
 resetBuyGiftRuleForm();
 resetSeriesForm();
+resetAgentForm();
 goTo('dashboard');
 checkIntro();
 
