@@ -231,6 +231,21 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
         </div>
       </div>
       <div class="grid-cards" id="dashboardCards"></div>
+
+      <div class="section-title">期初盈餘設定 <span class="tag">銜接使用這個工具之前，你自己另外記的帳</span></div>
+      <div class="card form-card">
+        <form id="openingBalanceForm">
+          <div class="form-grid">
+            <div class="field"><label>期初盈餘</label><input type="number" id="ob_amount" step="0.01" placeholder="例：50000（虧損可填負數）"></div>
+            <div class="field"><label>接軌日期（選填）</label><input type="date" id="ob_date"></div>
+            <div class="field"><label>備註（選填）</label><input type="text" id="ob_note" placeholder="例：2026年以前自己用Excel記的累積淨利"></div>
+          </div>
+          <div class="form-actions" style="position:static;background:none;padding-top:14px;">
+            <button type="submit" class="btn btn-primary btn-sm">💾 儲存期初盈餘</button>
+          </div>
+        </form>
+      </div>
+
       <div class="section-title">最近訂單</div>
       <div class="table-wrap" id="dashboardRecent"></div>
     </section>
@@ -433,6 +448,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
           <input type="hidden" id="gd_id">
           <div class="form-grid">
             <div class="field"><label>支出項名稱</label><input type="text" id="gd_name" placeholder="例：化妝棉組 / 蝦皮運費" required></div>
+            <div class="field"><label>期初庫存</label><input type="number" id="gd_initialStock" min="0" placeholder="0"></div>
             <div class="field"><label>訂製數量</label><input type="number" id="gd_batchQty" min="0" placeholder="0"></div>
             <div class="field"><label>訂製成本（總額）</label><input type="number" id="gd_batchCost" min="0" step="0.01" placeholder="0"></div>
             <div class="field"><label>運費</label><input type="number" id="gd_shipping" min="0" step="0.01" placeholder="0"></div>
@@ -655,6 +671,7 @@ const AGENT_BATCHES_KEY = "microbiz_agent_batches_v1";
 const PRODUCTS_KEY = "microbiz_products_v1";
 const BUYGIFTRULES_KEY = "microbiz_buygiftrules_v1";
 const PRODUCT_SERIES_KEY = "microbiz_productseries_v1";
+const OPENING_BALANCE_KEY = "microbiz_opening_balance_v1";
 const INTRO_SEEN_KEY = "microbiz_intro_seen_v1";
 
 let orders = [];
@@ -665,6 +682,7 @@ let agentBatches = [];
 let products = [];
 let buyGiftRules = [];
 let productSeries = [];
+let openingBalance = { amount:'', date:'', note:'' };
 let editingId = null;
 let editingGiftDefId = null;
 let editingTierId = null;
@@ -697,6 +715,7 @@ function loadAll(){
   try{ products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]'); }catch(e){ products = []; }
   try{ buyGiftRules = JSON.parse(localStorage.getItem(BUYGIFTRULES_KEY) || '[]'); }catch(e){ buyGiftRules = []; }
   try{ productSeries = JSON.parse(localStorage.getItem(PRODUCT_SERIES_KEY) || '[]'); }catch(e){ productSeries = []; }
+  try{ openingBalance = JSON.parse(localStorage.getItem(OPENING_BALANCE_KEY) || 'null') || { amount:'', date:'', note:'' }; }catch(e){ openingBalance = { amount:'', date:'', note:'' }; }
 }
 function safeSetItem(key, value){
   try{
@@ -715,6 +734,7 @@ function saveAgentBatches(){ return safeSetItem(AGENT_BATCHES_KEY, JSON.stringif
 function saveProducts(){ return safeSetItem(PRODUCTS_KEY, JSON.stringify(products)); }
 function saveBuyGiftRules(){ return safeSetItem(BUYGIFTRULES_KEY, JSON.stringify(buyGiftRules)); }
 function saveProductSeries(){ return safeSetItem(PRODUCT_SERIES_KEY, JSON.stringify(productSeries)); }
+function saveOpeningBalance(){ return safeSetItem(OPENING_BALANCE_KEY, JSON.stringify(openingBalance)); }
 
 /* ---------- Storage usage ---------- */
 const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
@@ -788,6 +808,27 @@ function unitCost(def){
   const q = num(def.batchQty);
   if(q<=0) return 0;
   return (num(def.batchCost) + num(def.shipping) + num(def.tariff)) / q;
+}
+function getConsumedGiftItems(o){
+  const items = [];
+  const c = calcOrder(o);
+  if(!o.noGift){
+    if(c.matchedTier){ (c.matchedTier.items||[]).forEach(it=> items.push({ giftDefId: it.giftDefId, qty: it.qty })); }
+    (c.matchedProductRules||[]).forEach(m=> (m.rule.items||[]).forEach(it=> items.push({ giftDefId: it.giftDefId, qty: it.qty })));
+  }
+  (o.customGiftItems || o.shopeeGiftItems || []).forEach(it=> items.push({ giftDefId: it.giftDefId, qty: it.qty }));
+  return items;
+}
+function currentGiftStock(giftDefId){
+  const g = getGiftDef(giftDefId);
+  if(!g) return 0;
+  let stock = num(g.initialStock) + num(g.batchQty);
+  orders.forEach(o=>{
+    getConsumedGiftItems(o).forEach(it=>{
+      if(it.giftDefId===giftDefId) stock -= num(it.qty);
+    });
+  });
+  return stock;
 }
 function giftDefOptionsHtml(selectedId){
   if(giftDefs.length===0) return '<option value="">尚未建立支出項，請先到「支出項設定」新增</option>';
@@ -1003,23 +1044,43 @@ function renderDashboard(){
   const monthOrders = orders.filter(o=> monthKey(o.orderDate)===curMonth);
   let revenue=0, cost=0, profit=0;
   monthOrders.forEach(o=>{ const c = calcOrder(o); revenue+=c.revenueTotal; cost+=c.costTotal; profit+=c.profitTotal; });
-  let allProfit=0;
-  orders.forEach(o=>{ allProfit += calcOrder(o).profitTotal; });
+  let ordersProfit=0;
+  orders.forEach(o=>{ ordersProfit += calcOrder(o).profitTotal; });
+  const obAmount = num(openingBalance.amount);
+  const allProfit = ordersProfit + obAmount;
 
   const cards = [
     { label:'本月訂單數', value: monthOrders.length + ' 筆', cls:'' },
     { label:'本月營收', value: fmt(revenue), cls:'blue' },
     { label:'本月成本', value: fmt(cost), cls:'pink' },
     { label:'本月淨利', value: fmt(profit), cls: profit>=0?'sage':'dark', valCls: profit>=0?'pos':'neg' },
-    { label:'累計總淨利', value: fmt(allProfit), cls:'dark', valCls: allProfit>=0?'pos':'neg' },
+    { label:'期初盈餘', value: fmt(obAmount), cls:'', valCls: obAmount>=0?'pos':'neg' },
+    { label:'累計總淨利（含期初）', value: fmt(allProfit), cls:'dark', valCls: allProfit>=0?'pos':'neg' },
   ];
   document.getElementById('dashboardCards').innerHTML = cards.map(c=>`
     <div class="stat-card ${c.cls}"><div class="stat-label">${c.label}</div><div class="stat-value ${c.valCls||''}">${c.value}</div></div>`).join('');
+
+  document.getElementById('ob_amount').value = openingBalance.amount || '';
+  document.getElementById('ob_date').value = openingBalance.date || '';
+  document.getElementById('ob_note').value = openingBalance.note || '';
 
   const recent = [...orders].sort((a,b)=> (b.orderDate||'').localeCompare(a.orderDate||'')).slice(0,6);
   document.getElementById('dashboardRecent').innerHTML = buildTable(recent, false);
   bindRowActions('dashboardRecent');
 }
+document.getElementById('openingBalanceForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const data = {
+    amount: document.getElementById('ob_amount').value,
+    date: document.getElementById('ob_date').value,
+    note: document.getElementById('ob_note').value,
+  };
+  openingBalance = data;
+  if(saveOpeningBalance()){
+    showToast('已儲存期初盈餘');
+    renderDashboard();
+  }
+});
 
 /* ---------- List page ---------- */
 function getFiltered(){
@@ -1443,17 +1504,22 @@ document.getElementById('orderForm').addEventListener('submit', function(e){
 function renderGiftDefTable(){
   const wrap = document.getElementById('giftDefTableWrap');
   if(giftDefs.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🧾</div>還沒有建立任何支出項，先在上方新增一個吧</div>`; return; }
-  const rows = giftDefs.map(g=>`
+  const rows = giftDefs.map(g=>{
+    const stock = currentGiftStock(g.id);
+    return `
     <tr>
       <td>${escapeHtml(g.name)}</td>
+      <td class="num">${num(g.initialStock)}</td>
       <td class="num">${num(g.batchQty)}</td>
       <td class="num">${fmt(g.batchCost)}</td>
       <td class="num">${fmt(g.shipping)}</td>
       <td class="num">${fmt(g.tariff)}</td>
       <td class="num" style="font-weight:700;">${fmt(unitCost(g))}</td>
+      <td class="num" style="${stock<0?'color:var(--danger);font-weight:700;':'font-weight:700;'}">${stock}</td>
       <td><button class="btn btn-ghost btn-sm" data-gd-edit="${g.id}">編輯</button> <button class="btn btn-danger btn-sm" data-gd-del="${g.id}">刪除</button></td>
-    </tr>`).join('');
-  wrap.innerHTML = `<table><thead><tr><th>支出項名稱</th><th class="num">數量</th><th class="num">總成本</th><th class="num">運費</th><th class="num">關稅</th><th class="num">單位成本</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>支出項名稱</th><th class="num">期初庫存</th><th class="num">訂製數量</th><th class="num">總成本</th><th class="num">運費</th><th class="num">關稅</th><th class="num">單位成本</th><th class="num">目前庫存</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   wrap.querySelectorAll('[data-gd-edit]').forEach(btn=> btn.addEventListener('click', ()=> editGiftDef(btn.dataset.gdEdit)));
   wrap.querySelectorAll('[data-gd-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1465,7 +1531,7 @@ function renderGiftDefTable(){
     });
   });
 }
-const giftDefFieldIds = ['name','batchQty','batchCost','shipping','tariff'];
+const giftDefFieldIds = ['name','initialStock','batchQty','batchCost','shipping','tariff'];
 function resetGiftDefForm(){
   editingGiftDefId = null;
   document.getElementById('gd_id').value='';
@@ -2195,7 +2261,7 @@ function renderYearly(){ document.getElementById('yearlyTableWrap').innerHTML = 
 
 /* ---------- Backup ---------- */
 document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries }, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries, openingBalance }, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `微商記帳備份_${todayStr()}.json`;
@@ -2219,12 +2285,14 @@ document.getElementById('importFile').addEventListener('change', function(e){
       const incomingProducts = parsed.products || [];
       const incomingRules = parsed.buyGiftRules || [];
       const incomingSeries = parsed.productSeries || [];
+      const incomingOb = parsed.openingBalance || { amount:'', date:'', note:'' };
       confirmDialog('匯入備份', `即將匯入 ${incomingOrders.length} 筆訂單、${incomingDefs.length} 個支出項、${incomingProducts.length} 個商品、${incomingSeries.length} 個批發系列，並覆蓋目前所有資料，確定要繼續嗎？`, ()=>{
         orders = incomingOrders; giftDefs = incomingDefs; giftTiers = incomingTiers;
         purchaseBatches = incomingPb; agentBatches = incomingAb;
         products = incomingProducts; buyGiftRules = incomingRules; productSeries = incomingSeries;
+        openingBalance = incomingOb;
         saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches();
-        saveProducts(); saveBuyGiftRules(); saveProductSeries();
+        saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance();
         renderDashboard(); renderList();
         showToast('匯入完成');
         goTo('dashboard');
@@ -2235,9 +2303,10 @@ document.getElementById('importFile').addEventListener('change', function(e){
   reader.readAsText(file);
 });
 document.getElementById('clearAllBtn').addEventListener('click', ()=>{
-  confirmDialog('清空所有資料', '確定要刪除所有訂單、商品、批發系列與支出項設定嗎？建議先匯出備份，此動作無法復原。', ()=>{
+  confirmDialog('清空所有資料', '確定要刪除所有訂單、商品、批發系列、支出項設定與期初盈餘嗎？建議先匯出備份，此動作無法復原。', ()=>{
     orders = []; giftDefs = []; giftTiers = []; purchaseBatches = []; agentBatches = []; products = []; buyGiftRules = []; productSeries = [];
-    saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches(); saveProducts(); saveBuyGiftRules(); saveProductSeries();
+    openingBalance = { amount:'', date:'', note:'' };
+    saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches(); saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance();
     renderDashboard(); renderList();
     showToast('已清空所有資料');
   });
