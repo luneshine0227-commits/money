@@ -211,7 +211,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
       <div class="card form-card">
         <h3 style="margin-bottom:12px;font-size:15px;">🎯 常見活動情境教學</h3>
         <ul class="guide-list">
-          <li><b>買五送一（同商品多送一份）</b>：數量填「實際出貨數量」（含送的），金額只填客人實際付的錢。例：客人買5盒付5盒的錢，但出貨6盒 → 數量填 <b>6</b>、金額填 <b>5盒的總價</b>。這樣庫存會扣對6盒，成本也會反映多送出去那1盒，利潤自動算好，不用額外設定</li>
+          <li><b>買五送一（同商品多送一份）</b>：建議另外新增一個商品，取名例如「A（送）」，成本設為0（不用填期初庫存成本或進貨成本）。客人買5送1時，零售品項填兩行：A×5（金額填客人實際付的錢）、A（送）×1（金額填0）。這樣算起來最直覺：A商品的成本正常算、多送的那份成本是0，利潤自動反映。<b>小提醒</b>：因為「A（送）」是獨立商品，A本身的庫存不會自動扣到送出去的部分，記得也幫「A（送）」記一下庫存（在商品設定填期初庫存，或用進貨紀錄增加數量），這樣「A（送）」自己的庫存才會跟著扣，兩邊庫存才會準</li>
           <li><b>活動期間降低批發門檻</b>（例：原本10盒才有400元／盒，活動期間5盒就享10盒價、15盒享30盒價）：不建議直接改原本的批發級距，因為金額是即時計算的，活動結束改回來，之前活動期間的訂單金額也會被重新計算，對不上帳。建議另外新增一個「活動版」系列（例：<b>598系列半門檻</b>），系列內商品跟原本一樣，但批發級距改成活動門檻。活動期間新增訂單選這個活動系列；活動結束後改回選原本系列，兩邊的歷史訂單金額都不會互相干擾</li>
           <li><b>叫貨公司送貨（任選商品，貨到才知道送什麼）</b>：等貨到、確認公司送的是哪個商品後，在「進貨紀錄」那筆多開一行：商品選實際收到的、<b>單價填0</b>、數量填實際送的數量。例：叫了 A×10（付費）、B×10（付費），結果公司送了2個A，進貨紀錄那筆就填3行：① A，單價（原本進貨價），數量10　② B，單價（原本進貨價），數量10　③ A，單價填0，數量填2（這是送的部分，另外開一行，不要跟第①行合併）。<b>同一個商品也可以分兩行填，不會算錯</b>——系統算平均進貨單價時，會把這個商品所有進貨紀錄的成本跟數量加總平均，不管分幾行填，最後都會正確反映「這批裡面有一部分是免費拿到的」</li>
         </ul>
@@ -222,7 +222,19 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
         <ul class="guide-list">
           <li>所有資料都<b>只存在這個瀏覽器、這台裝置</b>，不會自動上傳、也不會跟其他裝置或瀏覽器同步</li>
           <li>換裝置、換瀏覽器、清除瀏覽器資料／快取，資料都會不見，<b>養成習慣三不五時到「💾 備份」頁面匯出備份檔</b>，存一份在雲端硬碟</li>
-          <li>瀏覽器儲存空間有上限（約 5MB，可記錄數千筆訂單），「備份」頁面可以看到目前用了多少，快滿了系統會提醒你</li>
+          <li>瀏覽器儲存空間有上限（約 5MB，可記錄數千筆訂單），「備份」頁面可以看到目前用了多少，快滿了系統會提醒你；真的快滿了可以用下面「封存舊資料」的做法騰出空間</li>
+        </ul>
+      </div>
+
+      <div class="card form-card">
+        <h3 style="margin-bottom:12px;font-size:15px;">📦 空間快滿了？封存舊資料</h3>
+        <p style="font-size:13.5px;color:var(--medium);line-height:1.7;margin-bottom:10px;">
+          「💾 備份」頁面有「封存舊資料」功能：選一個日期，把這個日期（含）以前的訂單匯出成備份檔，並從目前資料中移除，騰出空間。
+        </p>
+        <ul class="guide-list">
+          <li><b>日／月／年結算的加總數字會永久保留</b>，被封存的期間照樣算在裡面，數字不會少，「累計總淨利」也會把封存的部分算進去</li>
+          <li>但「訂單清單」看不到那些被封存的訂單細節了，「商品報表」「代理報表」在那段期間的品項明細（賣了什麼、誰叫的貨）也沒辦法再查，只留在你下載的封存備份檔裡</li>
+          <li>建議<b>只封存 1～2 年以上的舊資料</b>，近期常查明細的資料盡量留著，這樣影響最小</li>
         </ul>
       </div>
 
@@ -673,6 +685,18 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;}
         <div class="bar-track" style="height:14px;"><div class="bar-fill" id="storageBar" style="width:0%;"></div></div>
         <div style="margin-top:8px;font-size:12.5px;color:var(--medium);" id="storageText">計算中…</div>
       </div>
+      <div class="card form-card">
+        <h3 style="margin-bottom:10px;font-size:15px;">📦 封存舊資料</h3>
+        <p style="font-size:13.5px;color:var(--medium);line-height:1.7;margin-bottom:14px;">
+          選一個日期，把「這個日期（含）以前」的訂單匯出成備份檔並從目前資料中移除，騰出空間。<br>
+          <b>日／月／年結算的加總數字會永久保留、不受影響</b>；但訂單清單看不到那些訂單的細節了，商品報表／代理報表在這段期間的品項明細也不會再顯示（只留在你下載的備份檔裡）。建議只封存 <b>1～2年以上的舊資料</b>，近期常查的細節盡量留著。
+        </p>
+        <div class="form-grid">
+          <div class="field"><label>封存這個日期（含）以前的訂單</label><input type="date" id="archiveCutoffDate"></div>
+        </div>
+        <div class="hint" id="archivePreview" style="margin:10px 0;"></div>
+        <button class="btn btn-danger btn-sm" id="archiveBtn">📦 封存並下載備份</button>
+      </div>
       <div class="card backup-box">
         <h3 style="margin-bottom:10px;font-size:15px;">匯出備份</h3>
         <p>將目前所有訂單、支出項設定資料匯出成一個 JSON 檔案，可保存在雲端硬碟或傳到其他裝置。</p>
@@ -730,6 +754,7 @@ const BUYGIFTRULES_KEY = "microbiz_buygiftrules_v1";
 const PRODUCT_SERIES_KEY = "microbiz_productseries_v1";
 const OPENING_BALANCE_KEY = "microbiz_opening_balance_v1";
 const AGENTS_KEY = "microbiz_agents_v1";
+const ARCHIVED_STATS_KEY = "microbiz_archived_daily_stats_v1";
 const INTRO_SEEN_KEY = "microbiz_intro_seen_v1";
 
 let orders = [];
@@ -743,6 +768,7 @@ let productSeries = [];
 let openingBalance = { amount:'', date:'', note:'' };
 let agents = [];
 let editingAgId = null;
+let archivedDailyStats = {};
 let editingId = null;
 let editingGiftDefId = null;
 let editingTierId = null;
@@ -777,6 +803,7 @@ function loadAll(){
   try{ productSeries = JSON.parse(localStorage.getItem(PRODUCT_SERIES_KEY) || '[]'); }catch(e){ productSeries = []; }
   try{ openingBalance = JSON.parse(localStorage.getItem(OPENING_BALANCE_KEY) || 'null') || { amount:'', date:'', note:'' }; }catch(e){ openingBalance = { amount:'', date:'', note:'' }; }
   try{ agents = JSON.parse(localStorage.getItem(AGENTS_KEY) || '[]'); }catch(e){ agents = []; }
+  try{ archivedDailyStats = JSON.parse(localStorage.getItem(ARCHIVED_STATS_KEY) || '{}'); }catch(e){ archivedDailyStats = {}; }
 }
 function safeSetItem(key, value){
   try{
@@ -797,11 +824,12 @@ function saveBuyGiftRules(){ return safeSetItem(BUYGIFTRULES_KEY, JSON.stringify
 function saveProductSeries(){ return safeSetItem(PRODUCT_SERIES_KEY, JSON.stringify(productSeries)); }
 function saveOpeningBalance(){ return safeSetItem(OPENING_BALANCE_KEY, JSON.stringify(openingBalance)); }
 function saveAgents(){ return safeSetItem(AGENTS_KEY, JSON.stringify(agents)); }
+function saveArchivedDailyStats(){ return safeSetItem(ARCHIVED_STATS_KEY, JSON.stringify(archivedDailyStats)); }
 
 /* ---------- Storage usage ---------- */
 const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
 function getStorageUsageBytes(){
-  const keys = [ORDERS_KEY, GIFTDEFS_KEY, GIFTTIERS_KEY, PURCHASE_BATCHES_KEY, AGENT_BATCHES_KEY, PRODUCTS_KEY, BUYGIFTRULES_KEY, PRODUCT_SERIES_KEY];
+  const keys = [ORDERS_KEY, GIFTDEFS_KEY, GIFTTIERS_KEY, PURCHASE_BATCHES_KEY, AGENT_BATCHES_KEY, PRODUCTS_KEY, BUYGIFTRULES_KEY, PRODUCT_SERIES_KEY, OPENING_BALANCE_KEY, AGENTS_KEY, ARCHIVED_STATS_KEY];
   let total = 0;
   keys.forEach(k=>{
     const v = localStorage.getItem(k);
@@ -1123,8 +1151,10 @@ function renderDashboard(){
   monthOrders.forEach(o=>{ const c = calcOrder(o); revenue+=c.revenueTotal; cost+=c.costTotal; profit+=c.profitTotal; });
   let ordersProfit=0;
   orders.forEach(o=>{ ordersProfit += calcOrder(o).profitTotal; });
+  let archivedProfit=0;
+  Object.values(archivedDailyStats).forEach(s=>{ archivedProfit += num(s.profit); });
   const obAmount = num(openingBalance.amount);
-  const allProfit = ordersProfit + obAmount;
+  const allProfit = ordersProfit + archivedProfit + obAmount;
 
   const cards = [
     { label:'本月訂單數', value: monthOrders.length + ' 筆', cls:'' },
@@ -1132,7 +1162,7 @@ function renderDashboard(){
     { label:'本月成本', value: fmt(cost), cls:'pink' },
     { label:'本月淨利', value: fmt(profit), cls: profit>=0?'sage':'dark', valCls: profit>=0?'pos':'neg' },
     { label:'期初盈餘', value: fmt(obAmount), cls:'', valCls: obAmount>=0?'pos':'neg' },
-    { label:'累計總淨利（含期初）', value: fmt(allProfit), cls:'dark', valCls: allProfit>=0?'pos':'neg' },
+    { label:'累計總淨利（含期初＋封存）', value: fmt(allProfit), cls:'dark', valCls: allProfit>=0?'pos':'neg' },
   ];
   document.getElementById('dashboardCards').innerHTML = cards.map(c=>`
     <div class="stat-card ${c.cls}"><div class="stat-label">${c.label}</div><div class="stat-value ${c.valCls||''}">${c.value}</div></div>`).join('');
@@ -2168,13 +2198,14 @@ function avgUnitCostForProduct(productId){
   if(!productId) return 0;
   const p = getProduct(productId);
   let totalCost=0, totalQty=0;
-  if(p){
+  // 單價為0（免費／贈送）的進貨不會拉低平均成本，只有正常「有花錢」的進貨才會拿來平均
+  if(p && num(p.initialStockCost) > 0){
     totalCost += num(p.initialStockCost);
     totalQty += num(p.initialStock);
   }
   purchaseBatches.forEach(b=>{
     (b.items||[]).forEach(it=>{
-      if(it.productId===productId){
+      if(it.productId===productId && num(it.cost) > 0){
         totalCost += num(it.cost)*num(it.qty);
         totalQty += num(it.qty);
       }
@@ -2534,6 +2565,13 @@ function aggregate(keyFn){
     const c = calcOrder(o);
     map[k].count++; map[k].revenue += c.revenueTotal; map[k].cost += c.costTotal; map[k].profit += c.profitTotal;
   });
+  Object.keys(archivedDailyStats).forEach(dateStr=>{
+    const k = keyFn(dateStr);
+    if(!k) return;
+    const s = archivedDailyStats[dateStr];
+    if(!map[k]) map[k] = { key:k, count:0, revenue:0, cost:0, profit:0 };
+    map[k].count += num(s.count); map[k].revenue += num(s.revenue); map[k].cost += num(s.cost); map[k].profit += num(s.profit);
+  });
   return Object.values(map).sort((a,b)=> b.key.localeCompare(a.key));
 }
 function buildSummaryTable(rows, keyLabel){
@@ -2554,9 +2592,66 @@ function renderMonthly(){
 }
 function renderYearly(){ document.getElementById('yearlyTableWrap').innerHTML = buildSummaryTable(aggregate(yearKey), '年度'); }
 
+/* ---------- 封存舊資料 ---------- */
+function updateArchivePreview(){
+  const cutoff = document.getElementById('archiveCutoffDate').value;
+  const preview = document.getElementById('archivePreview');
+  if(!cutoff){ preview.textContent=''; return; }
+  const matched = orders.filter(o=> o.orderDate && o.orderDate <= cutoff);
+  preview.textContent = `符合條件的訂單：${matched.length} 筆`;
+}
+document.getElementById('archiveCutoffDate').addEventListener('change', updateArchivePreview);
+document.getElementById('archiveBtn').addEventListener('click', function(){
+  const cutoff = document.getElementById('archiveCutoffDate').value;
+  if(!cutoff){ showToast('請先選擇封存日期'); return; }
+  const matched = orders.filter(o=> o.orderDate && o.orderDate <= cutoff);
+  if(matched.length===0){ showToast('這個日期以前沒有符合的訂單'); return; }
+  confirmDialog('封存舊資料', `即將封存 ${matched.length} 筆訂單（${cutoff} 以前），會先下載備份檔，之後從目前資料中移除。日／月／年結算的加總數字會保留，但訂單細節、商品／代理報表在這段期間的明細將無法再查看。確定要繼續嗎？`, ()=>{
+    doArchive(cutoff, matched);
+  });
+});
+function doArchive(cutoff, matched){
+  const newArchivedStats = JSON.parse(JSON.stringify(archivedDailyStats));
+  matched.forEach(o=>{
+    const c = calcOrder(o);
+    const d = o.orderDate;
+    if(!newArchivedStats[d]) newArchivedStats[d] = { count:0, revenue:0, cost:0, profit:0 };
+    newArchivedStats[d].count += 1;
+    newArchivedStats[d].revenue += c.revenueTotal;
+    newArchivedStats[d].cost += c.costTotal;
+    newArchivedStats[d].profit += c.profitTotal;
+  });
+  const prevArchivedStats = archivedDailyStats;
+  archivedDailyStats = newArchivedStats;
+  if(!saveArchivedDailyStats()){
+    archivedDailyStats = prevArchivedStats;
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify({ archivedAt: new Date().toISOString(), cutoff, orders: matched }, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `微商記帳封存_${cutoff}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const matchedIds = new Set(matched.map(o=>o.id));
+  const prevOrders = orders;
+  orders = orders.filter(o=> !matchedIds.has(o.id));
+  if(saveOrders()){
+    showToast(`已封存 ${matched.length} 筆訂單`);
+    document.getElementById('archiveCutoffDate').value = '';
+    updateArchivePreview();
+    renderStorageUsage();
+    renderDashboard();
+  }else{
+    orders = prevOrders;
+  }
+}
+
 /* ---------- Backup ---------- */
 document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries, openingBalance, agents }, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries, openingBalance, agents, archivedDailyStats }, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `微商記帳備份_${todayStr()}.json`;
@@ -2582,13 +2677,14 @@ document.getElementById('importFile').addEventListener('change', function(e){
       const incomingSeries = parsed.productSeries || [];
       const incomingOb = parsed.openingBalance || { amount:'', date:'', note:'' };
       const incomingAgents = parsed.agents || [];
+      const incomingArchived = parsed.archivedDailyStats || {};
       confirmDialog('匯入備份', `即將匯入 ${incomingOrders.length} 筆訂單、${incomingDefs.length} 個支出項、${incomingProducts.length} 個商品、${incomingSeries.length} 個批發系列、${incomingAgents.length} 個代理，並覆蓋目前所有資料，確定要繼續嗎？`, ()=>{
         orders = incomingOrders; giftDefs = incomingDefs; giftTiers = incomingTiers;
         purchaseBatches = incomingPb; agentBatches = incomingAb;
         products = incomingProducts; buyGiftRules = incomingRules; productSeries = incomingSeries;
-        openingBalance = incomingOb; agents = incomingAgents;
+        openingBalance = incomingOb; agents = incomingAgents; archivedDailyStats = incomingArchived;
         saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches();
-        saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance(); saveAgents();
+        saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance(); saveAgents(); saveArchivedDailyStats();
         renderDashboard(); renderList();
         showToast('匯入完成');
         goTo('dashboard');
@@ -2599,10 +2695,10 @@ document.getElementById('importFile').addEventListener('change', function(e){
   reader.readAsText(file);
 });
 document.getElementById('clearAllBtn').addEventListener('click', ()=>{
-  confirmDialog('清空所有資料', '確定要刪除所有訂單、商品、批發系列、支出項設定、期初盈餘與代理嗎？建議先匯出備份，此動作無法復原。', ()=>{
+  confirmDialog('清空所有資料', '確定要刪除所有訂單、商品、批發系列、支出項設定、期初盈餘、代理與封存彙總資料嗎？建議先匯出備份，此動作無法復原。', ()=>{
     orders = []; giftDefs = []; giftTiers = []; purchaseBatches = []; agentBatches = []; products = []; buyGiftRules = []; productSeries = [];
-    openingBalance = { amount:'', date:'', note:'' }; agents = [];
-    saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches(); saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance(); saveAgents();
+    openingBalance = { amount:'', date:'', note:'' }; agents = []; archivedDailyStats = {};
+    saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches(); saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance(); saveAgents(); saveArchivedDailyStats();
     renderDashboard(); renderList();
     showToast('已清空所有資料');
   });
