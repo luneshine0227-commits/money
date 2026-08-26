@@ -755,6 +755,8 @@ const PRODUCT_SERIES_KEY = "microbiz_productseries_v1";
 const OPENING_BALANCE_KEY = "microbiz_opening_balance_v1";
 const AGENTS_KEY = "microbiz_agents_v1";
 const ARCHIVED_STATS_KEY = "microbiz_archived_daily_stats_v1";
+const ARCHIVED_PRODUCT_STOCK_KEY = "microbiz_archived_product_stock_v1";
+const ARCHIVED_GIFT_STOCK_KEY = "microbiz_archived_gift_stock_v1";
 const INTRO_SEEN_KEY = "microbiz_intro_seen_v1";
 
 let orders = [];
@@ -769,6 +771,8 @@ let openingBalance = { amount:'', date:'', note:'' };
 let agents = [];
 let editingAgId = null;
 let archivedDailyStats = {};
+let archivedProductStock = {};
+let archivedGiftStock = {};
 let editingId = null;
 let editingGiftDefId = null;
 let editingTierId = null;
@@ -804,6 +808,8 @@ function loadAll(){
   try{ openingBalance = JSON.parse(localStorage.getItem(OPENING_BALANCE_KEY) || 'null') || { amount:'', date:'', note:'' }; }catch(e){ openingBalance = { amount:'', date:'', note:'' }; }
   try{ agents = JSON.parse(localStorage.getItem(AGENTS_KEY) || '[]'); }catch(e){ agents = []; }
   try{ archivedDailyStats = JSON.parse(localStorage.getItem(ARCHIVED_STATS_KEY) || '{}'); }catch(e){ archivedDailyStats = {}; }
+  try{ archivedProductStock = JSON.parse(localStorage.getItem(ARCHIVED_PRODUCT_STOCK_KEY) || '{}'); }catch(e){ archivedProductStock = {}; }
+  try{ archivedGiftStock = JSON.parse(localStorage.getItem(ARCHIVED_GIFT_STOCK_KEY) || '{}'); }catch(e){ archivedGiftStock = {}; }
 }
 function safeSetItem(key, value){
   try{
@@ -825,11 +831,13 @@ function saveProductSeries(){ return safeSetItem(PRODUCT_SERIES_KEY, JSON.string
 function saveOpeningBalance(){ return safeSetItem(OPENING_BALANCE_KEY, JSON.stringify(openingBalance)); }
 function saveAgents(){ return safeSetItem(AGENTS_KEY, JSON.stringify(agents)); }
 function saveArchivedDailyStats(){ return safeSetItem(ARCHIVED_STATS_KEY, JSON.stringify(archivedDailyStats)); }
+function saveArchivedProductStock(){ return safeSetItem(ARCHIVED_PRODUCT_STOCK_KEY, JSON.stringify(archivedProductStock)); }
+function saveArchivedGiftStock(){ return safeSetItem(ARCHIVED_GIFT_STOCK_KEY, JSON.stringify(archivedGiftStock)); }
 
 /* ---------- Storage usage ---------- */
 const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
 function getStorageUsageBytes(){
-  const keys = [ORDERS_KEY, GIFTDEFS_KEY, GIFTTIERS_KEY, PURCHASE_BATCHES_KEY, AGENT_BATCHES_KEY, PRODUCTS_KEY, BUYGIFTRULES_KEY, PRODUCT_SERIES_KEY, OPENING_BALANCE_KEY, AGENTS_KEY, ARCHIVED_STATS_KEY];
+  const keys = [ORDERS_KEY, GIFTDEFS_KEY, GIFTTIERS_KEY, PURCHASE_BATCHES_KEY, AGENT_BATCHES_KEY, PRODUCTS_KEY, BUYGIFTRULES_KEY, PRODUCT_SERIES_KEY, OPENING_BALANCE_KEY, AGENTS_KEY, ARCHIVED_STATS_KEY, ARCHIVED_PRODUCT_STOCK_KEY, ARCHIVED_GIFT_STOCK_KEY];
   let total = 0;
   keys.forEach(k=>{
     const v = localStorage.getItem(k);
@@ -918,6 +926,7 @@ function currentGiftStock(giftDefId){
       if(it.giftDefId===giftDefId) stock -= num(it.qty);
     });
   });
+  stock -= num(archivedGiftStock[giftDefId] || 0);
   return stock;
 }
 function giftDefOptionsHtml(selectedId){
@@ -1024,6 +1033,7 @@ function currentStock(productId){
       if(o.productId===productId) stock -= num(o.productQty);
     }
   });
+  stock -= num(archivedProductStock[productId] || 0);
   return stock;
 }
 
@@ -1147,21 +1157,29 @@ function renderDashboard(){
   const now = new Date();
   const curMonth = now.toISOString().slice(0,7);
   const monthOrders = orders.filter(o=> monthKey(o.orderDate)===curMonth);
-  let revenue=0, cost=0, profit=0;
+  let revenue=0, cost=0, profit=0, monthOrderCount=monthOrders.length;
   monthOrders.forEach(o=>{ const c = calcOrder(o); revenue+=c.revenueTotal; cost+=c.costTotal; profit+=c.profitTotal; });
+  Object.keys(archivedDailyStats).forEach(dateStr=>{
+    if(monthKey(dateStr)===curMonth){
+      const s = archivedDailyStats[dateStr];
+      monthOrderCount += num(s.count);
+      revenue += num(s.revenue); cost += num(s.cost); profit += num(s.profit);
+    }
+  });
   let ordersProfit=0;
   orders.forEach(o=>{ ordersProfit += calcOrder(o).profitTotal; });
-  let archivedProfit=0;
-  Object.values(archivedDailyStats).forEach(s=>{ archivedProfit += num(s.profit); });
+  let archivedCount=0, archivedProfit=0;
+  Object.values(archivedDailyStats).forEach(s=>{ archivedCount += num(s.count); archivedProfit += num(s.profit); });
   const obAmount = num(openingBalance.amount);
   const allProfit = ordersProfit + archivedProfit + obAmount;
 
   const cards = [
-    { label:'本月訂單數', value: monthOrders.length + ' 筆', cls:'' },
+    { label:'本月訂單數', value: monthOrderCount + ' 筆', cls:'' },
     { label:'本月營收', value: fmt(revenue), cls:'blue' },
     { label:'本月成本', value: fmt(cost), cls:'pink' },
     { label:'本月淨利', value: fmt(profit), cls: profit>=0?'sage':'dark', valCls: profit>=0?'pos':'neg' },
     { label:'期初盈餘', value: fmt(obAmount), cls:'', valCls: obAmount>=0?'pos':'neg' },
+    { label:'已封存訂單／淨利', value: archivedCount+' 筆／'+fmt(archivedProfit), cls:'', valCls: archivedProfit>=0?'pos':'neg' },
     { label:'累計總淨利（含期初＋封存）', value: fmt(allProfit), cls:'dark', valCls: allProfit>=0?'pos':'neg' },
   ];
   document.getElementById('dashboardCards').innerHTML = cards.map(c=>`
@@ -2389,6 +2407,7 @@ document.getElementById('agentReportSelect').addEventListener('change', renderAg
 function renderProductSalesReport(){
   const wrap = document.getElementById('productSalesReportWrap');
   if(products.length===0){ wrap.innerHTML = `<div class="empty-state"><div class="emoji">🛍️</div>還沒有建立任何商品</div>`; return; }
+  const isAllTime = !reportRangeStart && !reportRangeEnd;
   const rows = products.map(p=>{
     let soldQty = 0;
     orders.forEach(o=>{
@@ -2401,6 +2420,7 @@ function renderProductSalesReport(){
         if(o.productId===p.id) soldQty += num(o.productQty);
       }
     });
+    if(isAllTime) soldQty += num(archivedProductStock[p.id] || 0);
     const stock = currentStock(p.id);
     return `<tr>
       <td>${escapeHtml(p.name)}</td>
@@ -2408,7 +2428,7 @@ function renderProductSalesReport(){
       <td class="num" style="${stock<0?'color:var(--danger);font-weight:700;':'font-weight:700;'}">${stock}</td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>商品名稱</th><th class="num">期間銷售數量</th><th class="num">目前庫存</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr><th>商品名稱</th><th class="num">期間銷售數量${isAllTime?'（含封存）':''}</th><th class="num">目前庫存</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function renderSeriesReport(){
   const wrap = document.getElementById('seriesReportWrap');
@@ -2612,6 +2632,9 @@ document.getElementById('archiveBtn').addEventListener('click', function(){
 });
 function doArchive(cutoff, matched){
   const newArchivedStats = JSON.parse(JSON.stringify(archivedDailyStats));
+  const newArchivedProductStock = JSON.parse(JSON.stringify(archivedProductStock));
+  const newArchivedGiftStock = JSON.parse(JSON.stringify(archivedGiftStock));
+
   matched.forEach(o=>{
     const c = calcOrder(o);
     const d = o.orderDate;
@@ -2620,11 +2643,31 @@ function doArchive(cutoff, matched){
     newArchivedStats[d].revenue += c.revenueTotal;
     newArchivedStats[d].cost += c.costTotal;
     newArchivedStats[d].profit += c.profitTotal;
+
+    // 保留這筆訂單消耗掉的商品庫存數量，之後即使訂單本身被刪除，目前庫存還是算得準
+    if((o.orderMode||'retail')==='wholesale'){
+      (o.wholesaleItems||[]).forEach(it=>{ newArchivedProductStock[it.productId] = num(newArchivedProductStock[it.productId]||0) + num(it.qty); });
+    }else if(o.retailItems && o.retailItems.length){
+      o.retailItems.forEach(it=>{ newArchivedProductStock[it.productId] = num(newArchivedProductStock[it.productId]||0) + num(it.qty); });
+    }else if(o.productId){
+      newArchivedProductStock[o.productId] = num(newArchivedProductStock[o.productId]||0) + num(o.productQty);
+    }
+    // 保留這筆訂單消耗掉的贈品／支出項庫存數量
+    getConsumedGiftItems(o).forEach(it=>{
+      newArchivedGiftStock[it.giftDefId] = num(newArchivedGiftStock[it.giftDefId]||0) + num(it.qty);
+    });
   });
+
   const prevArchivedStats = archivedDailyStats;
+  const prevArchivedProductStock = archivedProductStock;
+  const prevArchivedGiftStock = archivedGiftStock;
   archivedDailyStats = newArchivedStats;
-  if(!saveArchivedDailyStats()){
+  archivedProductStock = newArchivedProductStock;
+  archivedGiftStock = newArchivedGiftStock;
+  if(!saveArchivedDailyStats() || !saveArchivedProductStock() || !saveArchivedGiftStock()){
     archivedDailyStats = prevArchivedStats;
+    archivedProductStock = prevArchivedProductStock;
+    archivedGiftStock = prevArchivedGiftStock;
     return;
   }
 
@@ -2651,7 +2694,7 @@ function doArchive(cutoff, matched){
 
 /* ---------- Backup ---------- */
 document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries, openingBalance, agents, archivedDailyStats }, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), orders, giftDefs, giftTiers, purchaseBatches, agentBatches, products, buyGiftRules, productSeries, openingBalance, agents, archivedDailyStats, archivedProductStock, archivedGiftStock }, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `微商記帳備份_${todayStr()}.json`;
@@ -2678,13 +2721,17 @@ document.getElementById('importFile').addEventListener('change', function(e){
       const incomingOb = parsed.openingBalance || { amount:'', date:'', note:'' };
       const incomingAgents = parsed.agents || [];
       const incomingArchived = parsed.archivedDailyStats || {};
+      const incomingArchivedProductStock = parsed.archivedProductStock || {};
+      const incomingArchivedGiftStock = parsed.archivedGiftStock || {};
       confirmDialog('匯入備份', `即將匯入 ${incomingOrders.length} 筆訂單、${incomingDefs.length} 個支出項、${incomingProducts.length} 個商品、${incomingSeries.length} 個批發系列、${incomingAgents.length} 個代理，並覆蓋目前所有資料，確定要繼續嗎？`, ()=>{
         orders = incomingOrders; giftDefs = incomingDefs; giftTiers = incomingTiers;
         purchaseBatches = incomingPb; agentBatches = incomingAb;
         products = incomingProducts; buyGiftRules = incomingRules; productSeries = incomingSeries;
         openingBalance = incomingOb; agents = incomingAgents; archivedDailyStats = incomingArchived;
+        archivedProductStock = incomingArchivedProductStock; archivedGiftStock = incomingArchivedGiftStock;
         saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches();
         saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance(); saveAgents(); saveArchivedDailyStats();
+        saveArchivedProductStock(); saveArchivedGiftStock();
         renderDashboard(); renderList();
         showToast('匯入完成');
         goTo('dashboard');
@@ -2697,8 +2744,9 @@ document.getElementById('importFile').addEventListener('change', function(e){
 document.getElementById('clearAllBtn').addEventListener('click', ()=>{
   confirmDialog('清空所有資料', '確定要刪除所有訂單、商品、批發系列、支出項設定、期初盈餘、代理與封存彙總資料嗎？建議先匯出備份，此動作無法復原。', ()=>{
     orders = []; giftDefs = []; giftTiers = []; purchaseBatches = []; agentBatches = []; products = []; buyGiftRules = []; productSeries = [];
-    openingBalance = { amount:'', date:'', note:'' }; agents = []; archivedDailyStats = {};
+    openingBalance = { amount:'', date:'', note:'' }; agents = []; archivedDailyStats = {}; archivedProductStock = {}; archivedGiftStock = {};
     saveOrders(); saveGiftDefs(); saveGiftTiers(); savePurchaseBatches(); saveAgentBatches(); saveProducts(); saveBuyGiftRules(); saveProductSeries(); saveOpeningBalance(); saveAgents(); saveArchivedDailyStats();
+    saveArchivedProductStock(); saveArchivedGiftStock();
     renderDashboard(); renderList();
     showToast('已清空所有資料');
   });
